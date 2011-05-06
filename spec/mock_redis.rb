@@ -26,7 +26,7 @@ class MockRedis
   end
 
   def mget(*keys)
-    keys.map {|k| @data[k] }
+    keys.map {|k| @data[k]}
   end
 
   def expire(key, seconds)
