@@ -1,9 +1,8 @@
 require "spec_helper"
 
 describe Duckweed::App do
-  def app
-    described_class
-  end
+  let(:event) { 'test-event-47781' }
+  let(:app) { described_class }
 
   it "says hello to the world" do
     get '/hello'
@@ -11,7 +10,6 @@ describe Duckweed::App do
   end
 
   describe "POST /track/:event" do
-    let(:event) { 'test-event-47781' }
     let(:default_params) { {:auth_token => Duckweed::AUTH_TOKEN} }
 
     before do
