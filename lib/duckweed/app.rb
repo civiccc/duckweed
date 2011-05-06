@@ -1,11 +1,19 @@
 require 'sinatra'
 
 module Duckweed
+  # We use an auth token not for security (Duckweed will run behind
+  # the bastion host anyway) but to prevent accidental updates.
+  AUTH_TOKEN = 'c72b8b30ef809fcb866e057a9c12bd5c8a329a3a'
+
   class App < Sinatra::Base
 
-    post "/track/:event" do
-      increment_counters_for(params[:event])
-      "OK"
+    post '/track/:event' do
+      if authenticated?
+        increment_counters_for(params[:event])
+        'OK'
+      else
+        [403, 'FORBIDDEN']
+      end
     end
 
     get "/hello" do
@@ -16,6 +24,10 @@ module Duckweed
 
     def redis
       Duckweed.redis
+    end
+
+    def authenticated?
+      params[:auth_token] == AUTH_TOKEN
     end
 
     INTERVAL = {
