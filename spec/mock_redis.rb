@@ -36,7 +36,7 @@ class MockRedis
   private
 
   def regex_from_redis_pattern(pattern)
-    pattern.scan(%r/(\\.)|(.)/).map do |pair|
+    regexp = pattern.scan(%r/(\\.)|(.)/).map do |pair|
       if pair.first # this is backslash escape
         Regexp.escape(pair.first[1])
       else          # everything else
@@ -50,5 +50,6 @@ class MockRedis
         end
       end
     end.join
+    Regexp.new(regexp)
   end
 end
