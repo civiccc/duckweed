@@ -30,7 +30,7 @@ class MockRedis
   end
 
   def expire(key, seconds)
-    1
+    @data[key] ? 1 : 0
   end
 
   private
