@@ -34,10 +34,21 @@ class MockRedis
   end
 
   private
+
   def regex_from_redis_pattern(pattern)
-    # TODO: respect \ as escape character
-    pattern.
-      gsub('?', '.').
-      gsub('*', '.*')
+    pattern.scan(%r/(\\.)|(.)/).map do |pair|
+      if pair.first # this is backslash escape
+        Regexp.escape(pair.first[1])
+      else          # everything else
+        case pair.last
+        when '?'
+          '.'
+        when '*'
+          '.*'
+        else
+          Regexp.escape(pair.last)
+        end
+      end
+    end.join
   end
 end
