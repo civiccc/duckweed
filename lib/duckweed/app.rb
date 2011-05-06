@@ -47,7 +47,8 @@ module Duckweed
     end
 
     def bucket_with_granularity(granularity)
-      bucket_idx = Time.now.to_i / INTERVAL[granularity][:bucket_size]
+      time = params[:timestamp] || Time.now
+      bucket_idx = time.to_i / INTERVAL[granularity][:bucket_size]
       "#{granularity}:#{bucket_idx}"
     end
   end

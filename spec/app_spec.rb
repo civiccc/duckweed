@@ -82,6 +82,23 @@ describe Duckweed::App do
       end
     end
 
+    context 'with an explicit timestamp param' do
+      before do
+        # simulate a big delay in a Beanstalk queue
+        @timestamp = @now.to_i - 600_000
+      end
+
+      it 'uses the timestamp rather than Time.now' do
+        Duckweed.redis.should_receive(:incr).
+          with("duckweed:#{event}:minutes:#{@timestamp / 60}")
+        Duckweed.redis.should_receive(:incr).
+          with("duckweed:#{event}:hours:#{@timestamp / 3600}")
+        Duckweed.redis.should_receive(:incr).
+          with("duckweed:#{event}:days:#{@timestamp / 86400}")
+        post "/track/#{event}", :timestamp => @timestamp
+      end
+    end
+
     it 'expires minute-granularity data after a day' do
       Duckweed.redis.stub!(:expire)
       Duckweed.redis.should_receive(:expire).
