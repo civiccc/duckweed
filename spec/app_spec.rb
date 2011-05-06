@@ -29,27 +29,21 @@ describe Duckweed::App do
     end
 
     it "increments a key with minute-granularity in Redis" do
-      post "/track/test-incr"
-      Duckweed.redis.get("duckweed:test-incr:minutes:#{@now.to_i / 60}").should == 1
-
-      post "/track/test-incr"
-      Duckweed.redis.get("duckweed:test-incr:minutes:#{@now.to_i / 60}").should == 2
+      expect { post "/track/test-incr" }.to change {
+        Duckweed.redis.get("duckweed:test-incr:minutes:#{@now.to_i / 60}")
+      }.from(nil).to(1)
     end
 
     it "increments a key with hour-granularity in Redis" do
-      post "/track/test-incr"
-      Duckweed.redis.get("duckweed:test-incr:hours:#{@now.to_i / 3600}").should == 1
-
-      post "/track/test-incr"
-      Duckweed.redis.get("duckweed:test-incr:hours:#{@now.to_i / 3600}").should == 2
+      expect { post "/track/test-incr" }.to change {
+        Duckweed.redis.get("duckweed:test-incr:hours:#{@now.to_i / 3600}")
+      }.from(nil).to(1)
     end
 
     it "increments a key with day-granularity in Redis" do
-      post "/track/test-incr"
-      Duckweed.redis.get("duckweed:test-incr:days:#{@now.to_i / 86400}").should == 1
-
-      post "/track/test-incr"
-      Duckweed.redis.get("duckweed:test-incr:days:#{@now.to_i / 86400}").should == 2
+      expect { post "/track/test-incr" }.to change {
+        Duckweed.redis.get("duckweed:test-incr:days:#{@now.to_i / 86400}")
+      }.from(nil).to(1)
     end
   end
 end
