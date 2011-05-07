@@ -28,9 +28,9 @@ describe Duckweed::App do
         last_response.status.should == 403
       end
 
-      it 'responds with "FORBIDDEN"' do
+      it 'responds with "forbidden"' do
         post "/track/#{event}", {}
-        last_response.body.should == 'FORBIDDEN'
+        last_response.body.should =~ /forbidden/i
       end
     end
 
@@ -40,9 +40,9 @@ describe Duckweed::App do
         last_response.should be_successful
       end
 
-      it 'responds with "OK"' do
+      it 'responds with "ok"' do
         post "/track/#{event}", default_params
-        last_response.body.should == "OK"
+        last_response.body.should =~ /ok/i
       end
 
       it "increments a key with minute-granularity in Redis" do
