@@ -3,6 +3,12 @@ require "spec_helper"
 describe Duckweed::App do
   let(:event) { 'test-event-47781' }
   let(:app) { described_class }
+  let(:default_params) { {:auth_token => Duckweed::AUTH_TOKEN} }
+
+  before do
+    @now = Time.now
+    Time.stub!(:now).and_return(@now)
+  end
 
   it "says hello to the world" do
     get '/hello'
@@ -10,13 +16,6 @@ describe Duckweed::App do
   end
 
   describe "POST /track/:event" do
-    let(:default_params) { {:auth_token => Duckweed::AUTH_TOKEN} }
-
-    before do
-      @now = Time.now
-      Time.stub!(:now).and_return(@now)
-    end
-
     context 'without an authentication token' do
       it 'fails' do
         post "/track/#{event}", {}
@@ -40,7 +39,7 @@ describe Duckweed::App do
         last_response.should be_successful
       end
 
-      it 'responds with "ok"' do
+      it 'responds with "OK"' do
         post "/track/#{event}", default_params
         last_response.body.should =~ /ok/i
       end
@@ -76,7 +75,7 @@ describe Duckweed::App do
 
       it 'responds with "OK"' do
         post "/track/#{event}", default_params
-        last_response.body.should == "OK"
+        last_response.body.should =~ /ok/i
       end
 
       it "increments a key with minute-granularity in Redis" do
@@ -134,6 +133,169 @@ describe Duckweed::App do
       Duckweed.redis.should_receive(:expire).
         with("duckweed:#{event}:days:#{@now.to_i / 86400}", 86400 * 365)
       post "/track/#{event}", default_params
+    end
+  end
+
+  describe 'GET /count/:event' do
+    it 'succeeds' do
+      get "/count/#{event}"
+      last_response.should be_successful
+    end
+
+    context 'with no events recorded' do
+      it 'responds with 0' do
+        get "/count/#{event}"
+        last_response.body.should == '0'
+      end
+    end
+
+    context 'with multiple events recorded' do
+      before do
+        3.times { post "/track/#{event}", default_params }
+      end
+
+      it 'responds with the count' do
+        get "/count/#{event}"
+        last_response.body.should == '3'
+      end
+
+      it 'counts only events tracked in the last hour' do
+        Time.stub!(:now).and_return(@now - 5400) # 90 minutes ago
+        3.times { post "/track/#{event}", default_params }
+        get "/count/#{event}"
+        last_response.body.should == '3'
+      end
+    end
+  end
+
+  describe 'GET /count/:event/:granularity/:quantity' do
+    before do
+      3.times { post "/track/#{event}", default_params }
+    end
+
+    context 'with an unknown granularity' do
+      it 'fails' do
+        get "/count/#{event}/femtoseconds/10"
+        last_response.should_not be_successful
+      end
+
+      it 'returns a 400 status code' do
+        get "/count/#{event}/femtoseconds/10"
+        last_response.status.should == 400
+      end
+
+      it 'responds with "Bad Request"' do
+        get "/count/#{event}/femtoseconds/10"
+        last_response.body.should =~ /bad request/i
+      end
+    end
+
+    context 'with minutes granularity' do
+      it 'succeeds' do
+        get "/count/#{event}/minutes/5"
+        last_response.should be_successful
+      end
+
+      it 'responds with the count' do
+        get "/count/#{event}/minutes/5"
+        last_response.body.should == '3'
+      end
+
+      it 'counts only events tracked in the specified interval' do
+        Time.stub!(:now).and_return(@now - 600) # 10 minutes ago
+        3.times { post "/track/#{event}", default_params }
+        get "/count/#{event}/minutes/5"
+        last_response.body.should == '3'
+      end
+
+      context 'with a quantity that exceeds the expiry limit' do
+        it 'fails' do
+          get "/count/#{event}/minutes/1500" # 1500 minutes = 1 day, 1 hour
+          last_response.should_not be_successful
+        end
+
+        it 'returns a 413 status code' do
+          get "/count/#{event}/minutes/1500"
+          last_response.status.should == 413
+        end
+
+        it 'responds with "Request Entity Too Large"' do
+          get "/count/#{event}/minutes/1500"
+          last_response.body.should =~ /request entity too large/i
+        end
+      end
+    end
+
+    context 'with hours granularity' do
+      it 'succeeds' do
+        get "/count/#{event}/hours/5"
+        last_response.should be_successful
+      end
+
+      it 'responds with the count' do
+        get "/count/#{event}/hours/5"
+        last_response.body.should == '3'
+      end
+
+      it 'counts only events tracked in the specified interval' do
+        Time.stub!(:now).and_return(@now - 21600) # 6 hours ago
+        3.times { post "/track/#{event}", default_params }
+        get "/count/#{event}/hours/5"
+        last_response.body.should == '3'
+      end
+
+      context 'with a quantity that exceeds the expiry limit' do
+        it 'fails' do
+          get "/count/#{event}/hours/192" # 192 hours = 8 days
+          last_response.should_not be_successful
+        end
+
+        it 'returns a 413 status code' do
+          get "/count/#{event}/hours/192"
+          last_response.status.should == 413
+        end
+
+        it 'responds with "Request Entity Too Large"' do
+          get "/count/#{event}/hours/192"
+          last_response.body.should =~ /request entity too large/i
+        end
+      end
+    end
+
+    context 'with days granularity' do
+      it 'succeeds' do
+        get "/count/#{event}/days/5"
+        last_response.should be_successful
+      end
+
+      it 'responds with the count' do
+        get "/count/#{event}/days/5"
+        last_response.body.should == '3'
+      end
+
+      it 'counts only events tracked in the specified interval' do
+        Time.stub!(:now).and_return(@now - 864000) # 10 days ago
+        3.times { post "/track/#{event}", default_params }
+        get "/count/#{event}/days/5"
+        last_response.body.should == '3'
+      end
+
+      context 'with a quantity that exceeds the expiry limit' do
+        it 'fails' do
+          get "/count/#{event}/days/400" # 400 day = 1 year, 35 days
+          last_response.should_not be_successful
+        end
+
+        it 'returns a 413 status code' do
+          get "/count/#{event}/days/400"
+          last_response.status.should == 413
+        end
+
+        it 'responds with "Request Entity Too Large"' do
+          get "/count/#{event}/days/400"
+          last_response.body.should =~ /request entity too large/i
+        end
+      end
     end
   end
 end
