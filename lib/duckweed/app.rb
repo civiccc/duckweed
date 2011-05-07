@@ -12,7 +12,7 @@ module Duckweed
         increment_counters_for(params[:event])
         'OK'
       else
-        [403, 'FORBIDDEN']
+        [403, 'Forbidden']
       end
     end
 
