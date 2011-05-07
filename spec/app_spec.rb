@@ -208,6 +208,13 @@ describe Duckweed::App do
         last_response.body.should == '3'
       end
 
+      it 'uses the optional timestamp param as an offset' do
+        Time.stub!(:now).and_return(@now - 600) # 10 minutes ago
+        post "/track/#{event}", default_params
+        get "/count/#{event}/minutes/5?timestamp=#{(@now - 480).to_i}" # offset starting 8 minutes ago
+        last_response.body.should == '1'
+      end
+
       context 'with a quantity that exceeds the expiry limit' do
         it 'fails' do
           get "/count/#{event}/minutes/1500" # 1500 minutes = 1 day, 1 hour
@@ -244,6 +251,13 @@ describe Duckweed::App do
         last_response.body.should == '3'
       end
 
+      it 'uses the optional timestamp param as an offset' do
+        Time.stub!(:now).and_return(@now - 36000) # 10 hours ago
+        post "/track/#{event}", default_params
+        get "/count/#{event}/hours/5?timestamp=#{(@now - 28800).to_i}" # offset starting 8 hours ago
+        last_response.body.should == '1'
+      end
+
       context 'with a quantity that exceeds the expiry limit' do
         it 'fails' do
           get "/count/#{event}/hours/192" # 192 hours = 8 days
@@ -278,6 +292,13 @@ describe Duckweed::App do
         3.times { post "/track/#{event}", default_params }
         get "/count/#{event}/days/5"
         last_response.body.should == '3'
+      end
+
+      it 'uses the optional timestamp param as an offset' do
+        Time.stub!(:now).and_return(@now - 864000) # 10 days ago
+        post "/track/#{event}", default_params
+        get "/count/#{event}/days/5?timestamp=#{(@now - 691200).to_i}" # offset starting 8 days ago
+        last_response.body.should == '1'
       end
 
       context 'with a quantity that exceeds the expiry limit' do
