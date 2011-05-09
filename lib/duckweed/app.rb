@@ -1,4 +1,5 @@
 require 'sinatra'
+require 'duckweed'
 
 module Duckweed
   # We use an auth token not for security (Duckweed will run behind
