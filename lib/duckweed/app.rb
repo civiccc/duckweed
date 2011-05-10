@@ -1,4 +1,5 @@
 require 'duckweed'
+require 'duckweed/utility_methods'
 require 'json'
 require 'sinatra'
 
@@ -11,6 +12,7 @@ module Duckweed
   ]
 
   class App < Sinatra::Base
+    include UtilityMethods
 
     # the authentication token, if any, will come in as a param (for example,
     # via a POST to the /track/:event action) or as an HTTP Basic Authentication
@@ -175,30 +177,6 @@ module Duckweed
       [beginning, middle, ending].map do |time|
         Time.at(time).strftime(INTERVAL[granularity][:time_format])
       end
-    end
-
-    # Geckoboard renders an empty chart if any value is nil/null,
-    # so we have to interpolate intermediate values.
-    def interpolate *values
-      interpolated    = []
-      missing         = 0
-      last_seen       = nil
-      values.each do |val|
-        if val.nil?
-          missing += 1
-        else
-          if missing > 0
-            left  = (last_seen || val)
-            right = val
-            step  = (right - left).to_f / (missing + 1)
-            (1..(missing + 1)).each { |i| interpolated << (left + step * i) }
-          end
-          interpolated << (last_seen = val)
-          missing = 0
-        end
-      end
-      (0..missing).each { |i| interpolated << (last_seen || 0) }
-      interpolated
     end
   end
 end
