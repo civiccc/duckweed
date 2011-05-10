@@ -114,8 +114,10 @@ module Duckweed
     def increment_counters_for(event)
       INTERVAL.keys.each do |granularity|
         key = key_for(event, granularity)
-        redis.incr(key)
-        redis.expire(key, INTERVAL[granularity][:expiry])
+        if has_bucket_for?(granularity)
+          redis.incr(key)
+          redis.expire(key, INTERVAL[granularity][:expiry])
+        end
       end
     end
 
@@ -128,8 +130,11 @@ module Duckweed
     end
 
     def bucket_index(granularity)
-      time = params[:timestamp] || Time.now
-      time.to_i / INTERVAL[granularity][:bucket_size]
+      timestamp / INTERVAL[granularity][:bucket_size]
+    end
+
+    def timestamp
+      (params[:timestamp] || Time.now).to_i
     end
 
     def count_for(event, granularity, quantity)
@@ -149,6 +154,11 @@ module Duckweed
       Array.new(count) do |i|
         bucket_idx += 1
       end
+    end
+
+    def has_bucket_for?(granularity)
+      first_available_bucket_time = Time.now.to_i - INTERVAL[granularity][:expiry]
+      first_available_bucket_time < timestamp
     end
 
     def histogram(event, granularity, quantity)

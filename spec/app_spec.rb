@@ -114,7 +114,7 @@ describe Duckweed::App do
     context 'with an explicit timestamp param' do
       before do
         # simulate a big delay in a Beanstalk queue
-        @timestamp = @now.to_i - 600_000
+        @timestamp = @now.to_i - 6000
       end
 
       it 'uses the timestamp rather than Time.now' do
@@ -125,6 +125,15 @@ describe Duckweed::App do
         Duckweed.redis.should_receive(:incr).
           with("duckweed:#{event}:days:#{@timestamp / 86400}")
         post "/track/#{event}", default_params.merge(:timestamp => @timestamp)
+      end
+
+      it "does not make fine-grained records for long-ago events" do
+        long_ago = Time.now.to_i - (86400*30)  # 30 days
+        post "/track/#{event}", default_params.merge(:timestamp => long_ago)
+
+        # NB: the redis mock gets cleared before every example
+        Duckweed.redis.keys('*').should ==
+          ["duckweed:#{event}:days:#{long_ago / 86400}"]
       end
     end
 
