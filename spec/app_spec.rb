@@ -431,15 +431,18 @@ describe Duckweed::App do
         end
 
         it 'returns event frequencies in chronological order' do
-          json = get "/histogram/#{event}/minutes/4"
-          json = JSON.parse(json.body)
-          json['item'].should == [0, 3, 5, 2]
+          get "/histogram/#{event}/minutes/4"
+          JSON[last_response.body]['item'].should == [0, 3, 5, 2]
+        end
+
+        it 'returns 0 when there are no events' do
+          get "/histogram/untracked/minutes/4"
+          JSON[last_response.body]['item'].should == [0, 0, 0, 0]
         end
 
         it 'returns the min, mid and max values for the y-axis' do
-          json = get "/histogram/#{event}/minutes/4"
-          json = JSON.parse(json.body)
-          json['settings']['axisy'].should == [0, 2.5, 5]
+          get "/histogram/#{event}/minutes/4"
+          JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
       end
 
@@ -468,15 +471,18 @@ describe Duckweed::App do
         end
 
         it 'returns event frequencies in chronological order' do
-          json = get "/histogram/#{event}/hours/4"
-          json = JSON.parse(json.body)
-          json['item'].should == [0, 6, 2, 3]
+          get "/histogram/#{event}/hours/4"
+          JSON[last_response.body]['item'].should == [0, 6, 2, 3]
+        end
+
+        it 'returns 0 when there are no events' do
+          get "/histogram/untracked/hours/4"
+          JSON[last_response.body]['item'].should == [0, 0, 0, 0]
         end
 
         it 'returns the min, mid and max values for the y-axis' do
-          json = get "/histogram/#{event}/hours/4"
-          json = JSON.parse(json.body)
-          json['settings']['axisy'].should == [0, 3.0, 6]
+          get "/histogram/#{event}/hours/4"
+          JSON[last_response.body]['settings']['axisy'].should == [0, 3.0, 6]
         end
       end
 
@@ -505,15 +511,18 @@ describe Duckweed::App do
         end
 
         it 'returns event frequencies in chronological order' do
-          json = get "/histogram/#{event}/days/4"
-          json = JSON.parse(json.body)
-          json['item'].should == [0, 2, 4, 5]
+          get "/histogram/#{event}/days/4"
+          JSON[last_response.body]['item'].should == [0, 2, 4, 5]
+        end
+
+        it 'returns 0 when there are no events' do
+          get "/histogram/untracked/days/4"
+          JSON[last_response.body]['item'].should == [0, 0, 0, 0]
         end
 
         it 'returns the min, mid and max values for the y-axis' do
-          json = get "/histogram/#{event}/days/4"
-          json = JSON.parse(json.body)
-          json['settings']['axisy'].should == [0, 2.5, 5]
+          get "/histogram/#{event}/days/4"
+          JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
       end
     end
