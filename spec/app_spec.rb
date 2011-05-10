@@ -3,7 +3,7 @@ require "spec_helper"
 describe Duckweed::App do
   let(:event) { 'test-event-47781' }
   let(:app) { described_class }
-  let(:default_params) { {:auth_token => Duckweed::AUTH_TOKEN} }
+  let(:default_params) { { :auth_token => Duckweed::AUTH_TOKENS.first } }
 
   before do
     @now = Time.now
@@ -340,7 +340,7 @@ describe Duckweed::App do
 
     context 'with an authentication token' do
       before do
-        authorize Duckweed::AUTH_TOKEN, ''
+        authorize Duckweed::AUTH_TOKENS.first, ''
       end
 
       context 'with an unknown granularity' do
