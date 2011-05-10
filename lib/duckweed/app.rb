@@ -8,6 +8,13 @@ module Duckweed
 
   class App < Sinatra::Base
 
+    # the authentication token, if any, will come in as a param (for example,
+    # via a POST to the /track/:event action) or as an HTTP Basic Authentication
+    # username (eg. when we're queried by Geckoboard)
+    before do
+      @auth = auth_token_via_params || auth_token_via_http_basic_auth
+    end
+
     post '/track/:event' do
       if authenticated?
         increment_counters_for(params[:event])
@@ -44,8 +51,18 @@ module Duckweed
     end
 
     def authenticated?
-      params[:auth_token] == AUTH_TOKEN
+      @auth == AUTH_TOKEN
     end
+
+    def auth_token_via_params
+      params[:auth_token]
+    end
+
+    def auth_token_via_http_basic_auth
+      auth = Rack::Auth::Basic::Request.new(request.env)
+      auth.provided? && auth.basic? && auth.credentials.first
+    end
+
 
     INTERVAL = {
       :minutes => {
