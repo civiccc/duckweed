@@ -319,4 +319,23 @@ describe Duckweed::App do
       end
     end
   end
+
+  describe 'GET /histogram/:event/:granularity/:quantity' do
+    context 'without an authentication token' do
+      it 'fails' do
+        get "/histogram/#{event}/minutes/60"
+        last_response.should_not be_successful
+      end
+
+      it 'returns a 403 response code' do
+        get "/histogram/#{event}/minutes/60"
+        last_response.status.should == 403
+      end
+
+      it 'responds with "Forbidden"' do
+        get "/histogram/#{event}/minutes/60"
+        last_response.body.should =~ /forbidden/i
+      end
+    end
+  end
 end
