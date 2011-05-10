@@ -1,5 +1,6 @@
-require 'sinatra'
 require 'duckweed'
+require 'json'
+require 'sinatra'
 
 module Duckweed
   # We use an auth token not for security (Duckweed will run behind
@@ -40,6 +41,29 @@ module Duckweed
       end
     end
 
+    get '/histogram/:event' do
+      if authenticated?
+        histogram(params[:event], :minutes, '60')
+      else
+        [403, 'Forbidden']
+      end
+    end
+
+    get '/histogram/:event/:granularity/:quantity' do
+      granularity = params[:granularity].to_sym
+      if authenticated?
+        if !(interval = INTERVAL[granularity])
+          [400, 'Bad Request']
+        elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
+          [413, 'Request Entity Too Large']
+        else
+          histogram(params[:event], granularity, params[:quantity])
+        end
+      else
+        [403, 'Forbidden']
+      end
+    end
+
     get "/hello" do
       "Hello, world!"
     end
@@ -67,15 +91,18 @@ module Duckweed
     INTERVAL = {
       :minutes => {
         :bucket_size  => 60,
-        :expiry       => 86400        # keep minute-resolution data for last day
+        :expiry       => 86400,       # keep minute-resolution data for last day
+        :time_format  => '%I:%M%p'    # 10:11AM
       },
       :hours => {
         :bucket_size  => 3600,
-        :expiry       => 86400 * 7    # keep hour-resolution data for last week
+        :expiry       => 86400 * 7,   # keep hour-resolution data for last week
+        :time_format  => '%a %I%p'    # Sun 10AM
       },
       :days => {
         :bucket_size  => 86400,
-        :expiry       => 86400 * 365  # keep day-resolution data for last year
+        :expiry       => 86400 * 365, # keep day-resolution data for last year
+        :time_format  => '%b %d %Y'   # Jan 21 2011
       }
     }
 
@@ -119,6 +146,56 @@ module Duckweed
         bucket_idx -= 1
         idx
       end
+    end
+
+    def histogram(event, granularity, quantity)
+      keys      = keys_for(event, granularity, quantity)
+      values    = redis.mget(*keys)
+      items     = interpolate *values
+      times     = times_for(granularity, quantity)
+      min, max  = items.min, items.max
+      mid       = (max - min).to_f / 2
+      {
+        :item     => items,
+        :settings => {
+          :axisx  => times,
+          :axisy  => [min, mid, max],
+          :colour => 'ff9900'
+        }
+      }.to_json
+    end
+
+    def times_for(granularity, quantity)
+      ending    = Time.now.to_i
+      beginning = ending.to_i - INTERVAL[granularity][:bucket_size] * quantity.to_i
+      middle    = (beginning + ending) / 2
+      [beginning, middle, ending].map do |time|
+        Time.at(time).strftime(INTERVAL[granularity][:time_format])
+      end
+    end
+
+    # Geckoboard renders an empty chart if any value is nil/null,
+    # so we have to interpolate intermediate values.
+    def interpolate *values
+      interpolated    = []
+      missing         = 0
+      last_seen       = nil
+      values.each do |val|
+        if val.nil?
+          missing += 1
+        else
+          if missing > 0
+            left  = (last_seen || val)
+            right = val
+            step  = (right - left).to_f / (missing + 1)
+            (1..(missing + 1)).each { |i| interpolated << (left + step * i) }
+          end
+          interpolated << (last_seen = val)
+          missing = 0
+        end
+      end
+      (0..missing).each { |i| interpolated << (last_seen || 0) }
+      interpolated
     end
   end
 end
