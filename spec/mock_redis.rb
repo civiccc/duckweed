@@ -16,7 +16,9 @@ class MockRedis
   end
 
   def get(key)
-    @data[key].to_s
+    if v = @data[key]
+      v.to_s
+    end
   end
 
   def keys(pattern)

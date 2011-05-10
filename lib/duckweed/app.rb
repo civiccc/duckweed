@@ -155,13 +155,12 @@ module Duckweed
 
     def histogram(event, granularity, quantity)
       keys      = keys_for(event, granularity, quantity)
-      values    = redis.mget(*keys).map {|x| x.to_i if x}
-      items     = interpolate *values
+      values    = redis.mget(*keys).map {|x| x ? x.to_i : 0}
       times     = times_for(granularity, quantity)
-      min, max  = items.min, items.max
+      min, max  = values.min, values.max
       mid       = (max - min).to_f / 2
       {
-        :item     => items,
+        :item     => values,
         :settings => {
           :axisx  => times,
           :axisy  => [min, mid, max],
