@@ -16,7 +16,7 @@ class MockRedis
   end
 
   def get(key)
-    @data[key]
+    @data[key].to_s
   end
 
   def keys(pattern)
@@ -26,7 +26,7 @@ class MockRedis
   end
 
   def mget(*keys)
-    keys.map {|k| @data[k]}
+    keys.map {|k| get(k)}
   end
 
   def expire(key, seconds)
