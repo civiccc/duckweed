@@ -400,6 +400,15 @@ describe Duckweed::App do
             last_response.body.should =~ /request entity too large/i
           end
         end
+
+        it 'returns event frequencies in chronological order' do
+          3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 150) }
+          5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 90) }
+          2.times { post "/track/#{event}", default_params }
+          json = get "/histogram/#{event}/minutes/3"
+          json = JSON.parse(json.body)
+          json['item'].should == [3, 5, 2]
+        end
       end
 
       context 'with hours granularity' do

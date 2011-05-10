@@ -145,11 +145,9 @@ module Duckweed
     end
 
     def bucket_indices(granularity, count)
-      bucket_idx = bucket_index(granularity)
+      bucket_idx = bucket_index(granularity) - count
       Array.new(count) do |i|
-        idx = bucket_idx
-        bucket_idx -= 1
-        idx
+        bucket_idx += 1
       end
     end
 
