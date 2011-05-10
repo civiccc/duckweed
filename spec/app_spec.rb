@@ -343,13 +343,26 @@ describe Duckweed::App do
         authorize Duckweed::AUTH_TOKENS.first, ''
       end
 
-      context "when we need to interpolate in order to fill the graph" do
-        it "does not crash" do
+      context "when we have no data in some buckets" do
+        before do
           3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i) }
           5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 600) }
 
           get "/histogram/#{event}/minutes/60"
+        end
+
+        it "does not crash" do
           last_response.should be_successful
+        end
+
+        it "doesn't leak nils (Geckoboard hates nils)" do
+          JSON[last_response.body]["item"].each do |item|
+            item.should_not be_nil
+          end
+        end
+
+        it "sums to the correct value" do
+          JSON[last_response.body]["item"].inject(0, &:+).should == 8
         end
       end
 
