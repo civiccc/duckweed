@@ -303,7 +303,7 @@ describe Duckweed::App do
 
       context 'with a quantity that exceeds the expiry limit' do
         it 'fails' do
-          get "/count/#{event}/days/400" # 400 day = 1 year, 35 days
+          get "/count/#{event}/days/400" # 400 days = 1 year, 35 days
           last_response.should_not be_successful
         end
 
