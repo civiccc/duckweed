@@ -8,7 +8,7 @@ module Duckweed
   # can revoke tokens given to third parties without affecting our apps
   AUTH_TOKENS = [
     'secret_token', # internal use
-    'secret_token'  # Geckboard
+    'secret_token'  # Geckoboard
   ]
 
   class App < Sinatra::Base
