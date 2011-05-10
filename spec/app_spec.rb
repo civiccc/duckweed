@@ -5,6 +5,20 @@ describe Duckweed::App do
   let(:app) { described_class }
   let(:default_params) { { :auth_token => Duckweed::AUTH_TOKENS.first } }
 
+  def event_happened(params={})
+    event_name  = params[:event] || event
+    event_time  = params[:at]
+    event_count = params[:times] || 1
+
+    event_count.times do
+      params = default_params.dup
+      if event_time
+        params.merge!(:timestamp => event_time.to_i)
+      end
+      post "/track/#{event_name}", params
+    end
+  end
+
   before do
     @now = Time.now
     Time.stub!(:now).and_return(@now)
@@ -151,7 +165,7 @@ describe Duckweed::App do
 
     context 'with multiple events recorded' do
       before do
-        3.times { post "/track/#{event}", default_params }
+        event_happened(:times => 3)
       end
 
       it 'responds with the count' do
@@ -161,7 +175,7 @@ describe Duckweed::App do
 
       it 'counts only events tracked in the last hour' do
         Time.stub!(:now).and_return(@now - 5400) # 90 minutes ago
-        3.times { post "/track/#{event}", default_params }
+        event_happened(:times => 3)
         get "/count/#{event}"
         last_response.body.should == '3'
       end
@@ -170,7 +184,7 @@ describe Duckweed::App do
 
   describe 'GET /count/:event/:granularity/:quantity' do
     before do
-      3.times { post "/track/#{event}", default_params }
+      event_happened(:times => 3)
     end
 
     context 'with an unknown granularity' do
@@ -203,14 +217,14 @@ describe Duckweed::App do
 
       it 'counts only events tracked in the specified interval' do
         Time.stub!(:now).and_return(@now - 600) # 10 minutes ago
-        3.times { post "/track/#{event}", default_params }
+        event_happened(:times => 3)
         get "/count/#{event}/minutes/5"
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
         Time.stub!(:now).and_return(@now - 600) # 10 minutes ago
-        post "/track/#{event}", default_params
+        event_happened
         get "/count/#{event}/minutes/5?timestamp=#{(@now - 480).to_i}" # offset starting 8 minutes ago
         last_response.body.should == '1'
       end
@@ -246,14 +260,14 @@ describe Duckweed::App do
 
       it 'counts only events tracked in the specified interval' do
         Time.stub!(:now).and_return(@now - 21600) # 6 hours ago
-        3.times { post "/track/#{event}", default_params }
+        event_happened(:times => 3)
         get "/count/#{event}/hours/5"
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
         Time.stub!(:now).and_return(@now - 36000) # 10 hours ago
-        post "/track/#{event}", default_params
+        event_happened
         get "/count/#{event}/hours/5?timestamp=#{(@now - 28800).to_i}" # offset starting 8 hours ago
         last_response.body.should == '1'
       end
@@ -289,14 +303,14 @@ describe Duckweed::App do
 
       it 'counts only events tracked in the specified interval' do
         Time.stub!(:now).and_return(@now - 864000) # 10 days ago
-        3.times { post "/track/#{event}", default_params }
+        event_happened(:times => 3)
         get "/count/#{event}/days/5"
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
         Time.stub!(:now).and_return(@now - 864000) # 10 days ago
-        post "/track/#{event}", default_params
+        event_happened
         get "/count/#{event}/days/5?timestamp=#{(@now - 691200).to_i}" # offset starting 8 days ago
         last_response.body.should == '1'
       end
@@ -345,8 +359,8 @@ describe Duckweed::App do
 
       context "when we have no data in some buckets" do
         before do
-          3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i) }
-          5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 600) }
+          event_happened(:times => 3, :at => Time.now)
+          event_happened(:times => 5, :at => Time.now - 600) # 10 minutes ago
 
           get "/histogram/#{event}/minutes/60"
         end
@@ -385,9 +399,9 @@ describe Duckweed::App do
 
       context 'with minutes granularity' do
         before do
-          3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 120) } # 2 minutes ago
-          5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 60) }  # 1 minute ago
-          2.times { post "/track/#{event}", default_params }                                          # now
+          event_happened(:times => 3, :at => Time.now - 120) # 2 minutes ago
+          event_happened(:times => 5, :at => Time.now - 60)  # 1 minute ago
+          event_happened(:times => 2, :at => Time.now)
         end
 
         context 'with a quantity that exceeds the expiry limit' do
@@ -422,9 +436,9 @@ describe Duckweed::App do
 
       context 'with hours granularity' do
         before do
-          6.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 7200) } # 2 hours ago
-          2.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 3600) } # 1 hour ago
-          3.times { post "/track/#{event}", default_params }                                           # now
+          event_happened(:times => 6, :at => Time.now - 7200) # 2 hours ago
+          event_happened(:times => 2, :at => Time.now - 3600) # 1 hour ago
+          event_happened(:times => 3, :at => Time.now)
         end
 
         context 'with a quantity that exceeds the expiry limit' do
@@ -459,9 +473,9 @@ describe Duckweed::App do
 
       context 'with days granularity' do
         before do
-          2.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 172800) } # 2 days ago
-          4.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 86400) }  # 1 days ago
-          5.times { post "/track/#{event}", default_params }                                             # now
+          event_happened(:times => 2, :at => Time.now - 172800) # 2 days ago
+          event_happened(:times => 4, :at => Time.now - 86400)  # 1 day ago
+          event_happened(:times => 5, :at => Time.now)
         end
 
         context 'with a quantity that exceeds the expiry limit' do
