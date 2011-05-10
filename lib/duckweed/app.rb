@@ -155,7 +155,7 @@ module Duckweed
 
     def histogram(event, granularity, quantity)
       keys      = keys_for(event, granularity, quantity)
-      values    = redis.mget(*keys)
+      values    = redis.mget(*keys).map {|x| x.to_i if x}
       items     = interpolate *values
       times     = times_for(granularity, quantity)
       min, max  = items.min, items.max

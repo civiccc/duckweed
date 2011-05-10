@@ -343,6 +343,16 @@ describe Duckweed::App do
         authorize Duckweed::AUTH_TOKENS.first, ''
       end
 
+      context "when we need to interpolate in order to fill the graph" do
+        it "does not crash" do
+          3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i) }
+          5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 600) }
+
+          get "/histogram/#{event}/minutes/60"
+          last_response.should be_successful
+        end
+      end
+
       context 'with an unknown granularity' do
         it 'fails' do
           get "/histogram/#{event}/femtoseconds/10"
