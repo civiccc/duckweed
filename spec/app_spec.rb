@@ -47,19 +47,19 @@ describe Duckweed::App do
       it "increments a key with minute-granularity in Redis" do
         expect { post "/track/#{event}", default_params }.to change {
           Duckweed.redis.get("duckweed:#{event}:minutes:#{@now.to_i / 60}")
-        }.from(nil).to(1)
+        }.from(nil).to('1')
       end
 
       it "increments a key with hour-granularity in Redis" do
         expect { post "/track/#{event}", default_params }.to change {
           Duckweed.redis.get("duckweed:#{event}:hours:#{@now.to_i / 3600}")
-        }.from(nil).to(1)
+        }.from(nil).to('1')
       end
 
       it "increments a key with day-granularity in Redis" do
         expect { post "/track/#{event}", default_params }.to change {
           Duckweed.redis.get("duckweed:#{event}:days:#{@now.to_i / 86400}")
-        }.from(nil).to(1)
+        }.from(nil).to('1')
       end
     end
 
@@ -80,19 +80,19 @@ describe Duckweed::App do
 
       it "increments a key with minute-granularity in Redis" do
         expect { post "/track/#{event}", default_params }.to change {
-          Duckweed.redis.get("duckweed:#{event}:minutes:#{@now.to_i / 60}")
+          Duckweed.redis.get("duckweed:#{event}:minutes:#{@now.to_i / 60}").to_i
         }.by(1)
       end
 
       it "increments a key with hour-granularity in Redis" do
         expect { post "/track/#{event}", default_params }.to change {
-          Duckweed.redis.get("duckweed:#{event}:hours:#{@now.to_i / 3600}")
+          Duckweed.redis.get("duckweed:#{event}:hours:#{@now.to_i / 3600}").to_i
         }.by(1)
       end
 
       it "increments a key with day-granularity in Redis" do
         expect { post "/track/#{event}", default_params }.to change {
-          Duckweed.redis.get("duckweed:#{event}:days:#{@now.to_i / 86400}")
+          Duckweed.redis.get("duckweed:#{event}:days:#{@now.to_i / 86400}").to_i
         }.by(1)
       end
     end
