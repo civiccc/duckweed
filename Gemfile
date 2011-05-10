@@ -1,6 +1,9 @@
 source "http://rubygems.org"
 
-gem "json"
+# json has C components, so if you update the version, make sure
+# there's an rpgem-json package available for it.
+gem "json", "1.4.3"
+
 gem "sinatra"
 gem "redis"
 
