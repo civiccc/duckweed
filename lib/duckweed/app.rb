@@ -3,9 +3,12 @@ require 'json'
 require 'sinatra'
 
 module Duckweed
-  # We use an auth token not for security (Duckweed will run behind
-  # the bastion host anyway) but to prevent accidental updates.
-  AUTH_TOKEN = 'c72b8b30ef809fcb866e057a9c12bd5c8a329a3a'
+  # we use different tokens for internal/external use so that we
+  # can revoke tokens given to third parties without affecting our apps
+  AUTH_TOKENS = [
+    'c72b8b30ef809fcb866e057a9c12bd5c8a329a3a', # internal use
+    '582ace6fb12518d7c9ee7d26adbbc42bfca5650c'  # Geckboard
+  ]
 
   class App < Sinatra::Base
 
@@ -75,7 +78,7 @@ module Duckweed
     end
 
     def authenticated?
-      @auth == AUTH_TOKEN
+      AUTH_TOKENS.include?(@auth)
     end
 
     def auth_token_via_params
