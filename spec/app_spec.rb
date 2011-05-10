@@ -384,6 +384,12 @@ describe Duckweed::App do
       end
 
       context 'with minutes granularity' do
+        before do
+          3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 120) } # 2 minutes ago
+          5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 60) }  # 1 minute ago
+          2.times { post "/track/#{event}", default_params }                                          # now
+        end
+
         context 'with a quantity that exceeds the expiry limit' do
           it 'fails' do
             get "/histogram/#{event}/minutes/1500" # 1500 minutes = 1 day, 1 hour
@@ -402,16 +408,25 @@ describe Duckweed::App do
         end
 
         it 'returns event frequencies in chronological order' do
-          3.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 150) }
-          5.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 90) }
-          2.times { post "/track/#{event}", default_params }
-          json = get "/histogram/#{event}/minutes/3"
+          json = get "/histogram/#{event}/minutes/4"
           json = JSON.parse(json.body)
-          json['item'].should == [3, 5, 2]
+          json['item'].should == [0, 3, 5, 2]
+        end
+
+        it 'returns the min, mid and max values for the y-axis' do
+          json = get "/histogram/#{event}/minutes/4"
+          json = JSON.parse(json.body)
+          json['settings']['axisy'].should == [0, 2.5, 5]
         end
       end
 
       context 'with hours granularity' do
+        before do
+          6.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 7200) } # 2 hours ago
+          2.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 3600) } # 1 hour ago
+          3.times { post "/track/#{event}", default_params }                                           # now
+        end
+
         context 'with a quantity that exceeds the expiry limit' do
           it 'fails' do
             get "/histogram/#{event}/hours/192" # 192 hours = 8 days
@@ -428,9 +443,27 @@ describe Duckweed::App do
             last_response.body.should =~ /request entity too large/i
           end
         end
+
+        it 'returns event frequencies in chronological order' do
+          json = get "/histogram/#{event}/hours/4"
+          json = JSON.parse(json.body)
+          json['item'].should == [0, 6, 2, 3]
+        end
+
+        it 'returns the min, mid and max values for the y-axis' do
+          json = get "/histogram/#{event}/hours/4"
+          json = JSON.parse(json.body)
+          json['settings']['axisy'].should == [0, 3.0, 6]
+        end
       end
 
       context 'with days granularity' do
+        before do
+          2.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 172800) } # 2 days ago
+          4.times { post "/track/#{event}", default_params.merge(:timestamp => Time.now.to_i - 86400) }  # 1 days ago
+          5.times { post "/track/#{event}", default_params }                                             # now
+        end
+
         context 'with a quantity that exceeds the expiry limit' do
           it 'fails' do
             get "/histogram/#{event}/days/400" # 400 days = 1 year, 35 days
@@ -446,6 +479,18 @@ describe Duckweed::App do
             get "/histogram/#{event}/days/400"
             last_response.body.should =~ /request entity too large/i
           end
+        end
+
+        it 'returns event frequencies in chronological order' do
+          json = get "/histogram/#{event}/days/4"
+          json = JSON.parse(json.body)
+          json['item'].should == [0, 2, 4, 5]
+        end
+
+        it 'returns the min, mid and max values for the y-axis' do
+          json = get "/histogram/#{event}/days/4"
+          json = JSON.parse(json.body)
+          json['settings']['axisy'].should == [0, 2.5, 5]
         end
       end
     end
