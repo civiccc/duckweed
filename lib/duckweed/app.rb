@@ -15,7 +15,7 @@ module Duckweed
     include UtilityMethods
 
     # routes accessible without authentication:
-    AUTH_WHITELIST = ['/hello']
+    AUTH_WHITELIST = ['/health']
 
     before do
       unless AUTH_WHITELIST.include?(request.path_info) || authenticated?
@@ -47,8 +47,8 @@ module Duckweed
       histogram(params[:event], params[:granularity], params[:quantity])
     end
 
-    get "/hello" do
-      "Hello, world!"
+    get '/health' do
+      'OK'
     end
 
     private

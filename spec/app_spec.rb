@@ -24,9 +24,21 @@ describe Duckweed::App do
     Time.stub!(:now).and_return(@now)
   end
 
-  it "says hello to the world" do
-    get '/hello'
-    last_response.body.should =~ /world/i
+  describe 'GET /health' do
+    it 'succeeds' do
+      get '/health'
+      last_response.should be_successful
+    end
+
+    it 'returns a 200 status code' do
+      get '/health'
+      last_response.status.should == 200
+    end
+
+    it 'responds with "OK"' do
+      get '/health'
+      last_response.body.should == 'OK'
+    end
   end
 
   describe "POST /track/:event" do
