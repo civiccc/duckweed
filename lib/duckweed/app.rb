@@ -34,14 +34,8 @@ module Duckweed
     end
 
     get '/count/:event/:granularity/:quantity' do
-      granularity = params[:granularity].to_sym
-      if !(interval = INTERVAL[granularity])
-        [400, 'Bad Request']
-      elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
-        [413, 'Request Entity Too Large']
-      else
-        count_for(params[:event], granularity, params[:quantity])
-      end
+      check_request_limits!
+      count_for(params[:event], params[:granularity], params[:quantity])
     end
 
     get '/histogram/:event' do
@@ -49,14 +43,8 @@ module Duckweed
     end
 
     get '/histogram/:event/:granularity/:quantity' do
-      granularity = params[:granularity].to_sym
-      if !(interval = INTERVAL[granularity])
-        [400, 'Bad Request']
-      elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
-        [413, 'Request Entity Too Large']
-      else
-        histogram(params[:event], granularity, params[:quantity])
-      end
+      check_request_limits!
+      histogram(params[:event], params[:granularity], params[:quantity])
     end
 
     get "/hello" do
@@ -82,7 +70,6 @@ module Duckweed
       auth.provided? && auth.basic? && auth.credentials.first
     end
 
-
     INTERVAL = {
       :minutes => {
         :bucket_size  => 60,
@@ -100,6 +87,17 @@ module Duckweed
         :time_format  => '%b %d %Y'   # Jan 21 2011
       }
     }
+
+    # don't allow requests that would place an unreasonable load on the server,
+    # or for which we won't have data anyway
+    def check_request_limits!
+      granularity = params[:granularity].to_sym
+      if !(interval = INTERVAL[granularity])
+        halt 400, 'Bad Request'
+      elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
+        halt 413, 'Request Entity Too Large'
+      end
+    end
 
     def increment_counters_for(event)
       INTERVAL.keys.each do |granularity|
@@ -128,7 +126,7 @@ module Duckweed
     end
 
     def count_for(event, granularity, quantity)
-      keys = keys_for(event, granularity, quantity)
+      keys = keys_for(event, granularity.to_sym, quantity)
       redis.mget(*keys).inject(0) { |memo, obj| memo + obj.to_i }.to_s
     end
 
@@ -152,11 +150,12 @@ module Duckweed
     end
 
     def histogram(event, granularity, quantity)
-      keys      = keys_for(event, granularity, quantity)
-      values    = redis.mget(*keys).map {|x| x ? x.to_i : 0}
-      times     = times_for(granularity, quantity)
-      min, max  = values.min, values.max
-      mid       = (max - min).to_f / 2
+      granularity = granularity.to_sym
+      keys        = keys_for(event, granularity, quantity)
+      values      = redis.mget(*keys).map {|x| x ? x.to_i : 0}
+      times       = times_for(granularity, quantity)
+      min, max    = values.min, values.max
+      mid         = (max - min).to_f / 2
       {
         :item     => values,
         :settings => {
