@@ -11,8 +11,12 @@ class MockRedis
   end
 
   def incr(key)
-    @data[key] ||= 0
-    @data[key] += 1
+    incrby(key, 1)
+  end
+
+  def incrby(key, increment)
+    @data[key] ||=0
+    @data[key] += increment
   end
 
   def get(key)

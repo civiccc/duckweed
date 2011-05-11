@@ -103,7 +103,11 @@ module Duckweed
       INTERVAL.keys.each do |granularity|
         key = key_for(event, granularity)
         if has_bucket_for?(granularity)
-          redis.incr(key)
+          if params[:quantity]
+            redis.incrby(key, params[:quantity].to_i)
+          else
+            redis.incr(key)
+          end
           redis.expire(key, INTERVAL[granularity][:expiry])
         end
       end
