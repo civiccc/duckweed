@@ -8,7 +8,8 @@ module Duckweed
   # can revoke tokens given to third parties without affecting our apps
   AUTH_TOKENS = [
     'c72b8b30ef809fcb866e057a9c12bd5c8a329a3a', # internal use
-    '582ace6fb12518d7c9ee7d26adbbc42bfca5650c'  # Geckoboard
+    '582ace6fb12518d7c9ee7d26adbbc42bfca5650c', # Geckoboard
+    'gYfro0crkACUiJqBz8Di2PK5JZyESI25agroCFst'  # Pingdom
   ]
 
   class App < Sinatra::Base
