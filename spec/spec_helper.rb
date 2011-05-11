@@ -5,6 +5,7 @@ require 'mock_redis'
 
 $LOAD_PATH.unshift(File.expand_path(File.join(__FILE__, "..", "..", "lib")))
 require 'duckweed'
+require 'shared/authorization_examples'
 
 module SpecHelpers
   def open_page_in_browser

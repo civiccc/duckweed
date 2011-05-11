@@ -42,20 +42,9 @@ describe Duckweed::App do
   end
 
   describe "POST /track/:event" do
-    context 'without an authentication token' do
-      it 'fails' do
+    it_should_behave_like 'pages with auth' do
+      def do_request
         post "/track/#{event}", {}
-        last_response.should_not be_successful
-      end
-
-      it 'returns a 403 status code' do
-        post "/track/#{event}", {}
-        last_response.status.should == 403
-      end
-
-      it 'responds with "forbidden"' do
-        post "/track/#{event}", {}
-        last_response.body.should =~ /forbidden/i
       end
     end
 
@@ -236,20 +225,9 @@ describe Duckweed::App do
   end
 
   describe 'GET /count/:event' do
-    context 'without an auth token' do
-      it 'fails' do
+    it_should_behave_like 'pages with auth' do
+      def do_request
         get "/count/#{event}", {}
-        last_response.should_not be_successful
-      end
-
-      it 'returns a 403 status code' do
-        get "/count/#{event}", {}
-        last_response.status.should == 403
-      end
-
-      it 'responds with "forbidden"' do
-        get "/count/#{event}", {}
-        last_response.body.should =~ /forbidden/i
       end
     end
 
@@ -437,20 +415,9 @@ describe Duckweed::App do
   end
 
   describe 'GET /histogram/:event/:granularity/:quantity' do
-    context 'without an authentication token' do
-      it 'fails' do
+    it_should_behave_like 'pages with auth' do
+      def do_request
         get "/histogram/#{event}/minutes/60"
-        last_response.should_not be_successful
-      end
-
-      it 'returns a 403 response code' do
-        get "/histogram/#{event}/minutes/60"
-        last_response.status.should == 403
-      end
-
-      it 'responds with "Forbidden"' do
-        get "/histogram/#{event}/minutes/60"
-        last_response.body.should =~ /forbidden/i
       end
     end
 
