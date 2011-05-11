@@ -14,20 +14,18 @@ module Duckweed
   class App < Sinatra::Base
     include UtilityMethods
 
-    # the authentication token, if any, will come in as a param (for example,
-    # via a POST to the /track/:event action) or as an HTTP Basic Authentication
-    # username (eg. when we're queried by Geckoboard)
+    # routes accessible without authentication:
+    AUTH_WHITELIST = ['/hello']
+
     before do
-      @auth = auth_token_via_params || auth_token_via_http_basic_auth
+      unless AUTH_WHITELIST.include?(request.path_info) || authenticated?
+        halt 403, 'Forbidden'
+      end
     end
 
     post '/track/:event' do
-      if authenticated?
-        increment_counters_for(params[:event])
-        'OK'
-      else
-        [403, 'Forbidden']
-      end
+      increment_counters_for(params[:event])
+      'OK'
     end
 
     get '/count/:event' do
@@ -47,25 +45,17 @@ module Duckweed
     end
 
     get '/histogram/:event' do
-      if authenticated?
-        histogram(params[:event], :minutes, '60')
-      else
-        [403, 'Forbidden']
-      end
+      histogram(params[:event], :minutes, '60')
     end
 
     get '/histogram/:event/:granularity/:quantity' do
       granularity = params[:granularity].to_sym
-      if authenticated?
-        if !(interval = INTERVAL[granularity])
-          [400, 'Bad Request']
-        elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
-          [413, 'Request Entity Too Large']
-        else
-          histogram(params[:event], granularity, params[:quantity])
-        end
+      if !(interval = INTERVAL[granularity])
+        [400, 'Bad Request']
+      elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
+        [413, 'Request Entity Too Large']
       else
-        [403, 'Forbidden']
+        histogram(params[:event], granularity, params[:quantity])
       end
     end
 
@@ -80,7 +70,7 @@ module Duckweed
     end
 
     def authenticated?
-      AUTH_TOKENS.include?(@auth)
+      AUTH_TOKENS.include?(auth_token_via_params || auth_token_via_http_basic_auth)
     end
 
     def auth_token_via_params
