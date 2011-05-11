@@ -152,7 +152,7 @@ module Duckweed
     def histogram(event, granularity, quantity)
       granularity = granularity.to_sym
       keys        = keys_for(event, granularity, quantity)
-      values      = redis.mget(*keys).map {|x| x ? x.to_i : 0}
+      values      = redis.mget(*keys).map { |x| x.to_i }
       times       = times_for(granularity, quantity)
       min, max    = values.min, values.max
       mid         = (max - min).to_f / 2
