@@ -24,9 +24,18 @@ module Duckweed
       end
     end
 
-    post '/track/:event' do
-      increment_counters_for(params[:event])
-      'OK'
+    get '/check/:event' do
+      threshold = params[:threshold]
+      if threshold.nil? || threshold.empty?
+        halt 400, 'ERROR: Must provide threshold'
+      end
+
+      count = count_for(params[:event], :minutes, 60)
+      if count.to_i >= threshold.to_i
+        "GOOD: #{count}"
+      else
+        "BAD: #{count} < #{threshold}"
+      end
     end
 
     get '/count/:event' do
@@ -39,6 +48,10 @@ module Duckweed
       count_for(params[:event], params[:granularity], params[:quantity])
     end
 
+    get '/health' do
+      'OK'
+    end
+
     get '/histogram/:event' do
       histogram(params[:event], :minutes, '60')
     end
@@ -48,7 +61,8 @@ module Duckweed
       histogram(params[:event], params[:granularity], params[:quantity])
     end
 
-    get '/health' do
+    post '/track/:event' do
+      increment_counters_for(params[:event])
       'OK'
     end
 
