@@ -1,0 +1,83 @@
+BENCHMARKING
+
+For now have done simple benchmarking of tracking (POSTing events).
+Will add some benchmarking of count and histogram requests once we've
+accumulated a reasonable quantity of data to query.
+
+Tracking
+--------
+
+Here are a couple of sample runs done with apachebench, one using concurrency 1
+and another with concurrency 10:
+
+  echo auth_token=the_actual_auth_token > /tmp/duckweed-post-data
+  ab -p /tmp/duckweed-post-data -T application/x-www-form-urlencoded \
+     -c 1 -n 1000 duckweed/track/benchmark-1
+  ab -p /tmp/duckweed-post-data -T application/x-www-form-urlencoded \
+     -c 10 -n 1000 duckweed/track/benchmark-1
+
+        Concurrency Level:      10
+        Time taken for tests:   4.603168 seconds
+        Complete requests:      1000
+        Failed requests:        0
+        Write errors:           0
+        Total transferred:      242000 bytes
+        Total POSTed:           221000
+        HTML transferred:       2000 bytes
+        Requests per second:    217.24 [#/sec] (mean)
+        Time per request:       4.603 [ms] (mean)
+        Time per request:       4.603 [ms] (mean, across all concurrent requests)
+        Transfer rate:          51.27 [Kbytes/sec] received
+                                46.89 kb/s sent
+                                98.23 kb/s total
+
+        Connection Times (ms)
+                      min  mean[+/-sd] median   max
+        Connect:        1    1   0.2      1       5
+        Processing:     2    3   2.0      3      18
+        Waiting:        2    2   2.2      3      18
+        Total:          3    4   2.0      4      20
+
+        Percentage of the requests served within a certain time (ms)
+          50%      4
+          66%      4
+          75%      4
+          80%      4
+          90%      4
+          95%      4
+          98%     17
+          99%     18
+        100%     20 (longest request)
+
+        Concurrency Level:      10
+        Time taken for tests:   0.537767 seconds
+        Complete requests:      1000
+        Failed requests:        0
+        Write errors:           0
+        Total transferred:      242242 bytes
+        Total POSTed:           221884
+        HTML transferred:       2002 bytes
+        Requests per second:    1859.54 [#/sec] (mean)
+        Time per request:       5.378 [ms] (mean)
+        Time per request:       0.538 [ms] (mean, across all concurrent requests)
+        Transfer rate:          438.85 [Kbytes/sec] received
+                                402.93 kb/s sent
+                                842.83 kb/s total
+
+        Connection Times (ms)
+                      min  mean[+/-sd] median   max
+        Connect:        1    1   0.1      1       4
+        Processing:     2    3   6.4      3      62
+        Waiting:        2    3   6.4      3      62
+        Total:          3    4   6.4      4      63
+
+        Percentage of the requests served within a certain time (ms)
+          50%      4
+          66%      4
+          75%      4
+          80%      4
+          90%      4
+          95%      5
+          98%     20
+          99%     61
+        100%     63 (longest request)
