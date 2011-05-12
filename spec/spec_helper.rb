@@ -5,7 +5,7 @@ require 'mock_redis'
 
 $LOAD_PATH.unshift(File.expand_path(File.join(__FILE__, "..", "..", "lib")))
 require 'duckweed'
-require 'shared/authorization_examples'
+Dir['spec/shared/*.rb'].each {|shared| require shared}
 
 module SpecHelpers
   def event_happened(params={})
