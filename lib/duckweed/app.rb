@@ -8,7 +8,8 @@ module Duckweed
   # can revoke tokens given to third parties without affecting our apps
   AUTH_TOKENS = [
     'c72b8b30ef809fcb866e057a9c12bd5c8a329a3a', # internal use
-    '582ace6fb12518d7c9ee7d26adbbc42bfca5650c'  # Geckoboard
+    '582ace6fb12518d7c9ee7d26adbbc42bfca5650c', # Geckoboard
+    'gYfro0crkACUiJqBz8Di2PK5JZyESI25agroCFst'  # Pingdom
   ]
 
   class App < Sinatra::Base
@@ -23,9 +24,15 @@ module Duckweed
       end
     end
 
-    post '/track/:event' do
-      increment_counters_for(params[:event])
-      'OK'
+    get '/check/:event' do
+      require_threshold!
+      check_threshold(params[:event], :minutes, 60)
+    end
+
+    get '/check/:event/:granularity/:quantity' do
+      require_threshold!
+      check_request_limits!
+      check_threshold(params[:event], params[:granularity], params[:quantity])
     end
 
     get '/count/:event' do
@@ -38,6 +45,10 @@ module Duckweed
       count_for(params[:event], params[:granularity], params[:quantity])
     end
 
+    get '/health' do
+      'OK'
+    end
+
     get '/histogram/:event' do
       histogram(params[:event], :minutes, '60')
     end
@@ -47,7 +58,8 @@ module Duckweed
       histogram(params[:event], params[:granularity], params[:quantity])
     end
 
-    get '/health' do
+    post '/track/:event' do
+      increment_counters_for(params[:event])
       'OK'
     end
 
@@ -145,6 +157,23 @@ module Duckweed
       bucket_idx = bucket_index(granularity) - count
       Array.new(count) do |i|
         bucket_idx += 1
+      end
+    end
+
+    def require_threshold!
+      threshold = params[:threshold]
+      if threshold.nil? || threshold.empty?
+        halt 400, 'ERROR: Must provide threshold'
+      end
+    end
+
+    def check_threshold(event, granularity, quantity)
+      threshold = params[:threshold]
+      count = count_for(event, granularity.to_sym, quantity)
+      if count.to_i >= threshold.to_i
+        "GOOD: #{count}"
+      else
+        "BAD: #{count} < #{threshold}"
       end
     end
 
