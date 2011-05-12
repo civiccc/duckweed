@@ -25,17 +25,14 @@ module Duckweed
     end
 
     get '/check/:event' do
-      threshold = params[:threshold]
-      if threshold.nil? || threshold.empty?
-        halt 400, 'ERROR: Must provide threshold'
-      end
+      require_threshold!
+      check_threshold(params[:event], :minutes, 60)
+    end
 
-      count = count_for(params[:event], :minutes, 60)
-      if count.to_i >= threshold.to_i
-        "GOOD: #{count}"
-      else
-        "BAD: #{count} < #{threshold}"
-      end
+    get '/check/:event/:granularity/:quantity' do
+      require_threshold!
+      check_request_limits!
+      check_threshold(params[:event], params[:granularity], params[:quantity])
     end
 
     get '/count/:event' do
@@ -160,6 +157,23 @@ module Duckweed
       bucket_idx = bucket_index(granularity) - count
       Array.new(count) do |i|
         bucket_idx += 1
+      end
+    end
+
+    def require_threshold!
+      threshold = params[:threshold]
+      if threshold.nil? || threshold.empty?
+        halt 400, 'ERROR: Must provide threshold'
+      end
+    end
+
+    def check_threshold(event, granularity, quantity)
+      threshold = params[:threshold]
+      count = count_for(event, granularity.to_sym, quantity)
+      if count.to_i >= threshold.to_i
+        "GOOD: #{count}"
+      else
+        "BAD: #{count} < #{threshold}"
       end
     end
 
