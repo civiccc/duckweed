@@ -1,7 +1,9 @@
 require 'duckweed'
+require 'duckweed/notify_hoptoad'
 require 'duckweed/utility_methods'
 require 'json'
 require 'sinatra'
+require 'hoptoad_notifier'
 
 module Duckweed
   # we use different tokens for internal/external use so that we
@@ -14,6 +16,7 @@ module Duckweed
 
   class App < Sinatra::Base
     include UtilityMethods
+    extend NotifyHoptoad
 
     # routes accessible without authentication:
     AUTH_WHITELIST = ['/health']
@@ -43,6 +46,11 @@ module Duckweed
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
       count_for(params[:event], params[:granularity], params[:quantity])
+    end
+
+    # Useful for testing Hoptoad notifications
+    get '/exception' do
+      raise RuntimeError, "wheeeeeeeeeeeeeeeeeeee"
     end
 
     get '/health' do
@@ -207,5 +215,6 @@ module Duckweed
         Time.at(time).strftime(INTERVAL[granularity][:time_format])
       end
     end
+
   end
 end
