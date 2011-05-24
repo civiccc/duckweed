@@ -6,6 +6,7 @@ gem "json", "1.4.3"
 
 gem "sinatra"
 gem "redis"
+gem "hoptoad_notifier"
 
 group(:test) do
   gem "rspec",    "~>2.0"
