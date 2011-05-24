@@ -12,7 +12,7 @@ module Duckweed
         "config",
         "hoptoad.yml")
 
-      hoptoad_config = YAML.load_file(hoptoad_yml)[ENV["RACK_ENV"]]
+      hoptoad_config = YAML.load_file(hoptoad_yml)
 
       if hoptoad_config && hoptoad_config["api_key"]
         HoptoadNotifier.configure {|c| c.api_key = hoptoad_config["api_key"]}
