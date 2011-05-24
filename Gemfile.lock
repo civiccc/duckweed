@@ -1,10 +1,12 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    activesupport (2.3.5)
+    activesupport (3.0.7)
+    builder (3.0.0)
     diff-lcs (1.1.2)
-    hoptoad_notifier (2.3.6)
+    hoptoad_notifier (2.4.10)
       activesupport
+      builder
     json (1.4.3)
     rack (1.2.2)
     rack-test (0.5.7)
