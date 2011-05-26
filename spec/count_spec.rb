@@ -28,7 +28,7 @@ describe Duckweed::App do
 
     context 'with multiple events recorded' do
       before do
-        event_happened(:times => 3)
+        event_happened(:times => 3, :at => @now - 60)
       end
 
       it 'responds with the count' do
@@ -37,19 +37,31 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the last hour' do
-        Time.stub!(:now).and_return(@now - 5400) # 90 minutes ago
-        event_happened(:times => 3)
+        event_happened(:times => 3, :at => @now - 5400)
         get "/count/#{event}", default_params
         last_response.body.should == '3'
       end
+
     end
+
+    context 'ignoring the last (incomplete) bucket' do
+
+      it 'does not return the current (partial) bucket unless asked' do
+
+        event_happened(:at => @now - 3600) # just over an hour ago
+        event_happened(:at => @now - 1800, :times => 2) # in the middle of the hour
+        event_happened(:at => @now,        :times => 4) # within the current (partial) bucket
+
+        get "/count/#{event}", default_params
+
+        last_response.body.should == '3'
+      end
+    end
+
+
   end
 
   describe 'GET /count/:event/:granularity/:quantity' do
-    before do
-      event_happened(:times => 3)
-    end
-
     context 'with an unknown granularity' do
       it 'fails' do
         get "/count/#{event}/femtoseconds/10", default_params
@@ -68,6 +80,10 @@ describe Duckweed::App do
     end
 
     context 'with minutes granularity' do
+      before do
+        event_happened(:times => 3, :at => @now - 60)
+      end
+
       it 'succeeds' do
         get "/count/#{event}/minutes/5", default_params
         last_response.should be_successful
@@ -79,16 +95,14 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the specified interval' do
-        Time.stub!(:now).and_return(@now - 600) # 10 minutes ago
-        event_happened(:times => 3)
+        event_happened(:times => 3, :at => @now - 600)
         get "/count/#{event}/minutes/5", default_params
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
-        Time.stub!(:now).and_return(@now - 600) # 10 minutes ago
-        event_happened
-        get "/count/#{event}/minutes/5?timestamp=#{(@now - 480).to_i}", default_params # 8 minutes ago
+        event_happened(:at => @now - 600)
+        get "/count/#{event}/minutes/5", default_params.merge(:timestamp => (@now - 480).to_i) # 8 minutes ago
         last_response.body.should == '1'
       end
 
@@ -111,6 +125,10 @@ describe Duckweed::App do
     end
 
     context 'with hours granularity' do
+      before do
+        event_happened(:times => 3, :at => @now - 3600)
+      end
+
       it 'succeeds' do
         get "/count/#{event}/hours/5", default_params
         last_response.should be_successful
@@ -122,16 +140,14 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the specified interval' do
-        Time.stub!(:now).and_return(@now - 21600) # 6 hours ago
-        event_happened(:times => 3)
+        event_happened(:times => 3, :at => @now - 21600)
         get "/count/#{event}/hours/5", default_params
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
-        Time.stub!(:now).and_return(@now - 36000) # 10 hours ago
-        event_happened
-        get "/count/#{event}/hours/5?timestamp=#{(@now - 28800).to_i}", default_params # 8 hours ago
+        event_happened(:at => @now - 36000)
+        get "/count/#{event}/hours/5", default_params.merge(:timestamp => (@now - 28800).to_i) # 8 hours ago
         last_response.body.should == '1'
       end
 
@@ -154,6 +170,10 @@ describe Duckweed::App do
     end
 
     context 'with days granularity' do
+      before do
+        event_happened(:times => 3, :at => @now - 86400)
+      end
+
       it 'succeeds' do
         get "/count/#{event}/days/5", default_params
         last_response.should be_successful
@@ -165,16 +185,14 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the specified interval' do
-        Time.stub!(:now).and_return(@now - 864000) # 10 days ago
-        event_happened(:times => 3)
+        event_happened(:times => 3, :at => @now - 864000) # 10 days ago
         get "/count/#{event}/days/5", default_params
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
-        Time.stub!(:now).and_return(@now - 864000) # 10 days ago
-        event_happened
-        get "/count/#{event}/days/5?timestamp=#{(@now - 691200).to_i}", default_params # 8 days ago
+        event_happened(:at => @now - 864000) # 10 days ago
+        get "/count/#{event}/days/5", default_params.merge(:timestamp => (@now - 691200).to_i) # 8 days ago
         last_response.body.should == '1'
       end
 

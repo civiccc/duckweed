@@ -35,7 +35,7 @@ module Duckweed
     get '/check/:event/:granularity/:quantity' do
       require_threshold!
       check_request_limits!
-      check_threshold(params[:event], params[:granularity], params[:quantity])
+      check_threshold(params[:event], params[:granularity], params[:quantity].to_i)
     end
 
     get '/count/:event' do
@@ -45,7 +45,7 @@ module Duckweed
 
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
-      count_for(params[:event], params[:granularity], params[:quantity])
+      count_for(params[:event], params[:granularity], params[:quantity].to_i)
     end
 
     # Useful for testing Hoptoad notifications
@@ -58,12 +58,12 @@ module Duckweed
     end
 
     get '/histogram/:event' do
-      histogram(params[:event], :minutes, '60')
+      histogram(params[:event], :minutes, 60)
     end
 
     get '/histogram/:event/:granularity/:quantity' do
       check_request_limits!
-      histogram(params[:event], params[:granularity], params[:quantity])
+      histogram(params[:event], params[:granularity], params[:quantity].to_i)
     end
 
     post '/track/:event' do
@@ -150,7 +150,9 @@ module Duckweed
     end
 
     def count_for(event, granularity, quantity)
-      keys = keys_for(event, granularity.to_sym, quantity)
+      # the "+1" and "-2" below are so that we don't look at the current
+      # probably-partially-filled bucket
+      keys = keys_for(event, granularity.to_sym, quantity+1)[0..-2]
       redis.mget(*keys).inject(0) { |memo, obj| memo + obj.to_i }.to_s
     end
 
