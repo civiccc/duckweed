@@ -1,8 +1,9 @@
 shared_examples_for 'granular checks' do
   before do
     event_happened(:times => 2,
-      :at => Time.now - 2*Duckweed::App::INTERVAL[granularity][:bucket_size])
-    event_happened(:times => 2)
+      :at => @now - 2*Duckweed::App::INTERVAL[granularity][:bucket_size])
+    event_happened(:times => 2,
+      :at => @now -   Duckweed::App::INTERVAL[granularity][:bucket_size])
   end
 
   it 'succeeds' do

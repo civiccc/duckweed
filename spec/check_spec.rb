@@ -23,7 +23,7 @@ describe Duckweed::App do
 
     context 'when the count is < the given threshold' do
       before do
-        event_happened(:times => 1)
+        event_happened(:times => 1, :at => @now - 60)
       end
 
       it 'responds with BAD' do
@@ -39,7 +39,7 @@ describe Duckweed::App do
 
     context 'when the count is >= the given threshold' do
       before do
-        event_happened(:times => 5)
+        event_happened(:times => 5, :at => @now - 60)
       end
 
       it 'responds with GOOD' do
