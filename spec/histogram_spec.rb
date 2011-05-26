@@ -97,7 +97,7 @@ describe Duckweed::App do
 
         it 'returns the min, mid and max values for the y-axis' do
           get "/histogram/#{event}/minutes/4"
-          JSON[last_response.body]['settings']['axisy'].should == [0, 2.0, 4]
+          JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
       end
 
