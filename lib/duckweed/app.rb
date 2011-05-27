@@ -150,9 +150,7 @@ module Duckweed
     end
 
     def count_for(event, granularity, quantity)
-      # the "+1" and "-2" below are so that we don't look at the current
-      # probably-partially-filled bucket
-      keys = keys_for(event, granularity.to_sym, quantity+1)[0..-2]
+      keys = keys_for(event, granularity.to_sym, quantity)
       redis.mget(*keys).inject(0) { |memo, obj| memo + obj.to_i }.to_s
     end
 
@@ -164,7 +162,7 @@ module Duckweed
     end
 
     def bucket_indices(granularity, count)
-      bucket_idx = bucket_index(granularity) - count
+      bucket_idx = bucket_index(granularity) - count - (params[:offset] || 1).to_i
       Array.new(count) do |i|
         bucket_idx += 1
       end
@@ -194,9 +192,7 @@ module Duckweed
 
     def histogram(event, granularity, quantity)
       granularity = granularity.to_sym
-      # the "+1" and "-2" below are so that we don't look at the current
-      # probably-partially-filled bucket
-      keys        = keys_for(event, granularity.to_sym, quantity+1)[0..-2]
+      keys        = keys_for(event, granularity.to_sym, quantity)
       values      = redis.mget(*keys).map { |x| x.to_i }
       times       = times_for(granularity, quantity)
       min, max    = values.min, values.max
