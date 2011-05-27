@@ -8,6 +8,10 @@ $LOAD_PATH.unshift(File.expand_path(File.join(__FILE__, "..", "..", "lib")))
 require 'duckweed'
 Dir['spec/shared/*.rb'].each {|shared| require shared}
 
+MINUTE = 60
+HOUR   = 60 * MINUTE
+DAY    = 24 * HOUR
+
 module SpecHelpers
   def event_happened(params={})
     event_name  = params[:event] || event

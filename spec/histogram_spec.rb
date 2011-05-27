@@ -21,8 +21,8 @@ describe Duckweed::App do
 
       context "when we have no data in some buckets" do
         before do
-          event_happened(:times => 5, :at => Time.now - 600) # 10 minutes ago
-          event_happened(:times => 3, :at => Time.now - 60)
+          event_happened(:times => 5, :at => Time.now - (10 * MINUTE))
+          event_happened(:times => 3, :at => Time.now - MINUTE)
           event_happened(:times => 7, :at => Time.now)
 
           get "/histogram/#{event}/minutes/60"
@@ -62,9 +62,9 @@ describe Duckweed::App do
 
       context 'with minutes granularity' do
         before do
-          event_happened(:times => 3,  :at => Time.now - 180) # 3 minutes ago
-          event_happened(:times => 5,  :at => Time.now - 120) # 2 minutes ago
-          event_happened(:times => 2,  :at => Time.now - 60)  # 1 minute ago
+          event_happened(:times => 3,  :at => Time.now - (3 * MINUTE))
+          event_happened(:times => 5,  :at => Time.now - (2 * MINUTE))
+          event_happened(:times => 2,  :at => Time.now -      MINUTE)
           event_happened(:times => 11, :at => Time.now)       # should not get counted
         end
 
@@ -99,13 +99,19 @@ describe Duckweed::App do
           get "/histogram/#{event}/minutes/4"
           JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
+
+        it 'correctly honors the optional offset param' do
+          get "/histogram/#{event}/minutes/3", {:offset => 2}
+          JSON[last_response.body]['item'].should == [0, 3, 5]
+        end
+
       end
 
       context 'with hours granularity' do
         before do
-          event_happened(:times => 6,   :at => Time.now - 60*60*3) # 3 hours ago
-          event_happened(:times => 2,   :at => Time.now - 60*60*2) # 2 hours ago
-          event_happened(:times => 3,   :at => Time.now - 60*60)   # 1 hour ago
+          event_happened(:times => 6,   :at => Time.now - (3 * HOUR))
+          event_happened(:times => 2,   :at => Time.now - (2 * HOUR))
+          event_happened(:times => 3,   :at => Time.now -      HOUR)
           event_happened(:times => 127, :at => Time.now)           # should not get counted
         end
 
@@ -140,13 +146,19 @@ describe Duckweed::App do
           get "/histogram/#{event}/hours/4"
           JSON[last_response.body]['settings']['axisy'].should == [0, 3.0, 6]
         end
+
+        it 'correctly honors the optional offset param' do
+          get "/histogram/#{event}/hours/3", {:offset => 2}
+          JSON[last_response.body]['item'].should == [0, 6, 2]
+        end
+
       end
 
       context 'with days granularity' do
         before do
-          event_happened(:times => 2, :at => Time.now - 3*24*60*60) # 3 days ago
-          event_happened(:times => 4, :at => Time.now - 2*24*60*60) # 2 days ago
-          event_happened(:times => 5, :at => Time.now -   24*60*60) # 1 day ago
+          event_happened(:times => 2, :at => Time.now - (3 * DAY))
+          event_happened(:times => 4, :at => Time.now - (2 * DAY))
+          event_happened(:times => 5, :at => Time.now -      DAY)
           event_happened(:times => 9, :at => Time.now)              # should not get counted
         end
 
@@ -180,6 +192,11 @@ describe Duckweed::App do
         it 'returns the min, mid and max values for the y-axis' do
           get "/histogram/#{event}/days/4"
           JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
+        end
+
+        it 'correctly honors the optional offset param' do
+          get "/histogram/#{event}/days/3", {:offset => 2}
+          JSON[last_response.body]['item'].should == [0, 2, 4]
         end
       end
     end
