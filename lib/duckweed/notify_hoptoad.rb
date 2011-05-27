@@ -15,7 +15,10 @@ module Duckweed
       hoptoad_config = YAML.load_file(hoptoad_yml)
 
       if hoptoad_config && hoptoad_config["api_key"]
-        HoptoadNotifier.configure {|c| c.api_key = hoptoad_config["api_key"]}
+        HoptoadNotifier.configure do |c|
+          c.api_key = hoptoad_config["api_key"]
+          c.environment_name = ENV['RACK_ENV'] if ENV['RACK_ENV']
+        end
         use HoptoadNotifier::Rack
         enable :raise_errors
       end
