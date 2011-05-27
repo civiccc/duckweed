@@ -1,4 +1,4 @@
-require "spec_helper"
+require File.dirname(__FILE__) + '/spec_helper'
 
 describe Duckweed::App do
   let(:event) { 'test-event-47781' }
@@ -28,7 +28,7 @@ describe Duckweed::App do
 
     context 'with multiple events recorded' do
       before do
-        event_happened(:times => 3, :at => @now - 60)
+        event_happened(:times => 3, :at => @now - MINUTE)
       end
 
       it 'responds with the count' do
@@ -37,7 +37,7 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the last hour' do
-        event_happened(:times => 3, :at => @now - 5400)
+        event_happened(:times => 3, :at => @now - 90 * MINUTE)
         get "/count/#{event}", default_params
         last_response.body.should == '3'
       end
@@ -48,9 +48,9 @@ describe Duckweed::App do
 
       it 'does not return the current (partial) bucket unless asked' do
 
-        event_happened(:at => @now - 3600) # just over an hour ago
-        event_happened(:at => @now - 1800, :times => 2) # in the middle of the hour
-        event_happened(:at => @now,        :times => 4) # within the current (partial) bucket
+        event_happened(:at => @now - HOUR)                # just over an hour ago
+        event_happened(:at => @now - HOUR/2, :times => 2) # in the middle of the hour
+        event_happened(:at => @now,          :times => 4) # within the current (partial) bucket
 
         get "/count/#{event}", default_params
 
@@ -81,7 +81,7 @@ describe Duckweed::App do
 
     context 'with minutes granularity' do
       before do
-        event_happened(:times => 3, :at => @now - 60)
+        event_happened(:times => 3, :at => @now - MINUTE)
       end
 
       it 'succeeds' do
@@ -95,14 +95,15 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the specified interval' do
-        event_happened(:times => 3, :at => @now - 600)
+        event_happened(:times => 3, :at => @now - (10 * MINUTE))
         get "/count/#{event}/minutes/5", default_params
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
-        event_happened(:at => @now - 600)
-        get "/count/#{event}/minutes/5", default_params.merge(:timestamp => (@now - 480).to_i) # 8 minutes ago
+        event_happened(:at => @now - (10 * MINUTE))
+        get "/count/#{event}/minutes/5",
+            default_params.merge(:timestamp => (@now - (8 * MINUTE)).to_i)
         last_response.body.should == '1'
       end
 
@@ -122,11 +123,24 @@ describe Duckweed::App do
           last_response.body.should =~ /request entity too large/i
         end
       end
+
+      context 'when given an offset' do
+        it 'shows the correct event data' do
+          event_happened(:at => @now - (5  * MINUTE), :times => 2)
+          event_happened(:at => @now - (10 * MINUTE), :times => 4)
+          event_happened(:at => @now - (15 * MINUTE), :times => 8)
+
+          get "count/#{event}/minutes/10", default_params.merge(:offset => 5)
+
+          last_response.body.should == '6' # should get 5-min and 10-min events only
+        end
+      end
+
     end
 
     context 'with hours granularity' do
       before do
-        event_happened(:times => 3, :at => @now - 3600)
+        event_happened(:times => 3, :at => @now - HOUR)
       end
 
       it 'succeeds' do
@@ -140,14 +154,15 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the specified interval' do
-        event_happened(:times => 3, :at => @now - 21600)
+        event_happened(:times => 3, :at => @now - (6 * HOUR))
         get "/count/#{event}/hours/5", default_params
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
-        event_happened(:at => @now - 36000)
-        get "/count/#{event}/hours/5", default_params.merge(:timestamp => (@now - 28800).to_i) # 8 hours ago
+        event_happened(:at => @now - (10 * HOUR))
+        get "/count/#{event}/hours/5",
+          default_params.merge(:timestamp => (@now - (8 * HOUR)).to_i)
         last_response.body.should == '1'
       end
 
@@ -167,11 +182,23 @@ describe Duckweed::App do
           last_response.body.should =~ /request entity too large/i
         end
       end
+
+      context 'when given an offset' do
+        it 'shows the correct event data' do
+          event_happened(:at => @now - (5  * HOUR), :times => 3)
+          event_happened(:at => @now - (10 * HOUR), :times => 5)
+          event_happened(:at => @now - (15 * HOUR), :times => 7)
+
+          get "count/#{event}/hours/10", default_params.merge(:offset => 5)
+
+          last_response.body.should == '8' # should get 5-hr and 10-hr events only
+        end
+      end
     end
 
     context 'with days granularity' do
       before do
-        event_happened(:times => 3, :at => @now - 86400)
+        event_happened(:times => 3, :at => @now - DAY)
       end
 
       it 'succeeds' do
@@ -185,14 +212,15 @@ describe Duckweed::App do
       end
 
       it 'counts only events tracked in the specified interval' do
-        event_happened(:times => 3, :at => @now - 864000) # 10 days ago
+        event_happened(:times => 3, :at => @now - (10 * DAY))
         get "/count/#{event}/days/5", default_params
         last_response.body.should == '3'
       end
 
       it 'uses the optional timestamp param as an offset' do
-        event_happened(:at => @now - 864000) # 10 days ago
-        get "/count/#{event}/days/5", default_params.merge(:timestamp => (@now - 691200).to_i) # 8 days ago
+        event_happened(:at => @now - (10 * DAY))
+        get "/count/#{event}/days/5",
+          default_params.merge(:timestamp => (@now - (8 * DAY)).to_i)
         last_response.body.should == '1'
       end
 
@@ -210,6 +238,17 @@ describe Duckweed::App do
         it 'responds with "Request Entity Too Large"' do
           get "/count/#{event}/days/400", default_params
           last_response.body.should =~ /request entity too large/i
+        end
+      end
+      context 'when given an offset' do
+        it 'shows the correct event data' do
+          event_happened(:at => @now - (5  * DAY), :times => 1)
+          event_happened(:at => @now - (10 * DAY), :times => 2)
+          event_happened(:at => @now - (15 * DAY), :times => 4)
+
+          get "count/#{event}/days/10", default_params.merge(:offset => 5)
+
+          last_response.body.should == '3' # should get 5-day and 10-day events only
         end
       end
     end
