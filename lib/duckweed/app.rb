@@ -66,6 +66,16 @@ module Duckweed
       histogram(params[:event], params[:granularity], params[:quantity].to_i)
     end
 
+    get '/accumulate/:event' do
+      accumulate(params[:event], :minutes, 60)
+    end
+
+    get '/accumulate/:event/:granularity/:quantity' do
+      check_request_limits!
+      accumulate(params[:event], params[:granularity], params[:quantity].to_i)
+    end
+
+
     post '/track/:event' do
       increment_counters_for(params[:event])
       'OK'
@@ -192,9 +202,37 @@ module Duckweed
 
     def histogram(event, granularity, quantity)
       granularity = granularity.to_sym
-      keys        = keys_for(event, granularity.to_sym, quantity)
+      keys        = keys_for(event, granularity, quantity)
       values      = redis.mget(*keys).map { |x| x.to_i }
       times       = times_for(granularity, quantity)
+
+      geckoboard_jsonify(values, times)
+    end
+
+    def accumulate(event, granularity, quantity)
+      granularity = granularity.to_sym
+      keys        = keys_for(event, granularity, quantity)
+      hist_values = redis.mget(*keys).map { |x| x.to_i }
+
+      values = hist_values.inject([]) do |result, element|
+        result << result.last.to_i + element
+        result
+      end
+      times       = times_for(granularity, quantity)
+
+      geckoboard_jsonify(values, times)
+    end
+
+    def times_for(granularity, quantity)
+      ending    = Time.now.to_i
+      beginning = ending.to_i - INTERVAL[granularity][:bucket_size] * quantity.to_i
+      middle    = (beginning + ending) / 2
+      [beginning, middle, ending].map do |time|
+        Time.at(time).strftime(INTERVAL[granularity][:time_format])
+      end
+    end
+
+    def geckoboard_jsonify(values, times)
       min, max    = values.min, values.max
       mid         = (max - min).to_f / 2
       {
@@ -205,15 +243,6 @@ module Duckweed
           :colour => 'ff9900'
         }
       }.to_json
-    end
-
-    def times_for(granularity, quantity)
-      ending    = Time.now.to_i
-      beginning = ending.to_i - INTERVAL[granularity][:bucket_size] * quantity.to_i
-      middle    = (beginning + ending) / 2
-      [beginning, middle, ending].map do |time|
-        Time.at(time).strftime(INTERVAL[granularity][:time_format])
-      end
     end
 
   end
