@@ -201,25 +201,17 @@ module Duckweed
     end
 
     def histogram(event, granularity, quantity)
-      granularity = granularity.to_sym
-      keys        = keys_for(event, granularity, quantity)
-      values      = redis.mget(*keys).map { |x| x.to_i }
-      times       = times_for(granularity, quantity)
-
+      values, times = values_and_times_for(granularity, event, quantity)
       geckoboard_jsonify(values, times)
     end
 
     def accumulate(event, granularity, quantity)
-      granularity = granularity.to_sym
-      keys        = keys_for(event, granularity, quantity)
-      hist_values = redis.mget(*keys).map { |x| x.to_i }
-
-      values = hist_values.inject([]) do |result, element|
+      values, times = values_and_times_for(granularity, event, quantity)
+      # massage the values to be cumulative
+      values = values.inject([]) do |result, element|
         result << result.last.to_i + element
         result
       end
-      times       = times_for(granularity, quantity)
-
       geckoboard_jsonify(values, times)
     end
 
@@ -230,6 +222,14 @@ module Duckweed
       [beginning, middle, ending].map do |time|
         Time.at(time).strftime(INTERVAL[granularity][:time_format])
       end
+    end
+
+    def values_and_times_for(granularity, event, quantity)
+      granularity = granularity.to_sym
+      keys        = keys_for(event, granularity, quantity)
+      values      = redis.mget(*keys).map { |x| x.to_i }
+      times       = times_for(granularity, quantity)
+      [values, times]
     end
 
     def geckoboard_jsonify(values, times)
