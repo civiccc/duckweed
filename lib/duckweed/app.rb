@@ -35,7 +35,7 @@ module Duckweed
     get '/check/:event/:granularity/:quantity' do
       require_threshold!
       check_request_limits!
-      check_threshold(params[:event], params[:granularity], params[:quantity].to_i)
+      check_threshold(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
     get '/count/:event' do
@@ -45,7 +45,7 @@ module Duckweed
 
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
-      count_for(params[:event], params[:granularity], params[:quantity].to_i)
+      count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
     # Useful for testing Hoptoad notifications
@@ -63,7 +63,7 @@ module Duckweed
 
     get '/histogram/:event/:granularity/:quantity' do
       check_request_limits!
-      histogram(params[:event], params[:granularity], params[:quantity].to_i)
+      histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
     get '/accumulate/:event' do
@@ -72,7 +72,7 @@ module Duckweed
 
     get '/accumulate/:event/:granularity/:quantity' do
       check_request_limits!
-      accumulate(params[:event], params[:granularity], params[:quantity].to_i)
+      accumulate(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
 
@@ -171,6 +171,10 @@ module Duckweed
       end
     end
 
+    def max_buckets(granularity)
+      INTERVAL[granularity][:expiry] / INTERVAL[granularity][:bucket_size]
+    end
+
     def bucket_indices(granularity, count)
       bucket_idx = bucket_index(granularity) - count - (params[:offset] || 1).to_i
       Array.new(count) do |i|
@@ -187,7 +191,7 @@ module Duckweed
 
     def check_threshold(event, granularity, quantity)
       threshold = params[:threshold]
-      count = count_for(event, granularity.to_sym, quantity)
+      count = count_for(event, granularity, quantity)
       if count.to_i >= threshold.to_i
         "GOOD: #{count}"
       else
@@ -206,13 +210,17 @@ module Duckweed
     end
 
     def accumulate(event, granularity, quantity)
-      values, times = values_and_times_for(granularity, event, quantity)
+
+      # Fetch all the unexpired data we have, so that we can start counting from "1"
+      values, times = values_and_times_for(granularity, event, max_buckets(granularity))
+
       # massage the values to be cumulative
       values = values.inject([]) do |result, element|
         result << result.last.to_i + element
-        result
       end
-      geckoboard_jsonify(values, times)
+
+      # return only the quantity we asked for
+      geckoboard_jsonify(values[-quantity.to_i..-1], times[-quantity.to_i..-1])
     end
 
     def times_for(granularity, quantity)
@@ -225,9 +233,8 @@ module Duckweed
     end
 
     def values_and_times_for(granularity, event, quantity)
-      granularity = granularity.to_sym
       keys        = keys_for(event, granularity, quantity)
-      values      = redis.mget(*keys).map { |x| x.to_i }
+      values      = redis.mget(*keys).map(&:to_i)
       times       = times_for(granularity, quantity)
       [values, times]
     end

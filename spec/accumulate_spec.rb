@@ -59,10 +59,13 @@ describe Duckweed::App do
 
       context 'with minutes granularity' do
         before do
-          event_happened(:times => 3,  :at => Time.now - (3 * MINUTE))
-          event_happened(:times => 5,  :at => Time.now - (2 * MINUTE))
-          event_happened(:times => 7,  :at => Time.now -      MINUTE)
-          event_happened(:times => 11, :at => Time.now)       # should not get counted
+          event_happened(:times => 1,   :at => Time.now - (23 * HOUR))
+          event_happened(:times => 2,   :at => Time.now - (2  * HOUR))
+          event_happened(:times => 8,   :at => Time.now - (1  * HOUR))
+          event_happened(:times => 12,  :at => Time.now - (3  * MINUTE))
+          event_happened(:times => 21,  :at => Time.now - (2  * MINUTE))
+          event_happened(:times => 24,  :at => Time.now -       MINUTE)
+          event_happened(:times => 261, :at => Time.now)       # should not get counted
         end
 
         context 'with a quantity that exceeds the expiry limit' do
@@ -82,9 +85,9 @@ describe Duckweed::App do
           end
         end
 
-        it 'returns event frequencies in chronological order' do
+        it 'returns event totals in chronological order' do
           get "/accumulate/#{event}/minutes/4"
-          JSON[last_response.body]['item'].should == [0, 3, 8, 15]
+          JSON[last_response.body]['item'].should == [11, 23, 44, 68]
         end
 
         it 'returns 0 when there are no events' do
@@ -94,12 +97,12 @@ describe Duckweed::App do
 
         it 'returns the min, mid and max values for the y-axis' do
           get "/accumulate/#{event}/minutes/4"
-          JSON[last_response.body]['settings']['axisy'].should == [0, 7.5, 15]
+          JSON[last_response.body]['settings']['axisy'].should == [11, 28.5, 68]
         end
 
         it 'correctly honors the optional offset param' do
           get "/accumulate/#{event}/minutes/3", {:offset => 2}
-          JSON[last_response.body]['item'].should == [0, 3, 8]
+          JSON[last_response.body]['item'].should == [11, 23, 44]
         end
 
       end
