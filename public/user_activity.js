@@ -41,7 +41,7 @@ function drawGraph(graph_container_id, error_container_id, auth_token) {
 
   for (var i = 1; i <= maxAge; i++) {
     $.ajax({
-      url: "/count/activity-" + i + "-days?auth_token=" + auth_token,
+      url: "/count/activity-" + i + "-days/days/7?auth_token=" + auth_token,
       statusCode: {
         200: [makeResponseHandler(i), drawIfDone],
         403: handleError,
