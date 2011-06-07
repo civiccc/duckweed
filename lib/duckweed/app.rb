@@ -255,7 +255,7 @@ module Duckweed
 
     def geckoboard_jsonify(values, times)
       min, max    = values.min, values.max
-      mid         = (max - min).to_f / 2
+      mid         = (max + min).to_f / 2
       {
         :item     => values,
         :settings => {

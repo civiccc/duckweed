@@ -97,7 +97,7 @@ describe Duckweed::App do
 
         it 'returns the min, mid and max values for the y-axis' do
           get "/accumulate/#{event}/minutes/4"
-          JSON[last_response.body]['settings']['axisy'].should == [11, 28.5, 68]
+          JSON[last_response.body]['settings']['axisy'].should == [11, 39.5, 68]
         end
 
         it 'correctly honors the optional offset param' do
