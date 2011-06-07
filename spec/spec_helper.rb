@@ -16,15 +16,18 @@ module SpecHelpers
   def event_happened(params={})
     event_name  = params[:event] || event
     event_time  = params[:at]
-    event_count = params[:times] || 1
+    event_count = params[:times]
 
-    event_count.times do
-      params = default_params.dup
-      if event_time
-        params.merge!(:timestamp => event_time.to_i)
-      end
-      post "/track/#{event_name}", params
+    params = default_params.dup
+    if event_time
+      params.merge!(:timestamp => event_time.to_i)
     end
+    if event_count
+      params.merge!(:quantity => event_count)
+    end
+
+    post "/track/#{event_name}", params
+
   end
 
   def freeze_time
