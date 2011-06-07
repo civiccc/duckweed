@@ -11,13 +11,13 @@ describe Duckweed::App do
   describe 'GET /multicount?e[]=event1' do
     it_should_behave_like 'pages with auth' do
       def do_request
-        post "/multicount", {'e' => [event]}
+        post "/multicount", {'events' => [event]}
       end
     end
 
     context 'with an authentication token' do
       def post_multicount(events=[], params={})
-        post "/multicount", params.merge('e' => events.flatten)
+        post "/multicount", params.merge('events' => events.flatten)
         last_response.should be_successful
       end
 
@@ -89,7 +89,7 @@ describe Duckweed::App do
       context 'with a quantity that exceeds the expiry limit' do
         it 'returns a 413 status code' do
           post "/multicount", {
-            :e => [event],
+            :events => [event],
             :granularity => :minutes,
             :quantity => 2500}
           last_response.status.should == 413
