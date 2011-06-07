@@ -100,6 +100,11 @@ describe Duckweed::App do
           JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
 
+        it 'puts the mean in the mid-value for the y axis' do
+          get "/histogram/#{event}/minutes/3"
+          JSON[last_response.body]['settings']['axisy'].should == [2, 3.5, 5]
+        end
+
         it 'correctly honors the optional offset param' do
           get "/histogram/#{event}/minutes/3", {:offset => 2}
           JSON[last_response.body]['item'].should == [0, 3, 5]
