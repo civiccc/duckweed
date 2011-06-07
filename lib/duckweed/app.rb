@@ -77,7 +77,7 @@ module Duckweed
 
     # Only using post to get around request-length limitations w/get
     post '/multicount' do
-      events = params[:e] || []
+      events = params[:events] || []
       granularity = (params['granularity'] || :minutes).to_sym
       quantity = params[:quantity] || 60
 
