@@ -40,12 +40,12 @@ module Duckweed
 
     get '/count/:event' do
       # default to last hour with minute-granularity
-      count_for(params[:event], :minutes, 60)
+      count_for(params[:event], :minutes, 60).to_s
     end
 
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
-      count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
+      count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i).to_s
     end
 
     # Useful for testing Hoptoad notifications
@@ -75,6 +75,18 @@ module Duckweed
       accumulate(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
+    # Only using post to get around request-length limitations w/get
+    post '/multicount' do
+      events = params[:e] || []
+      granularity = (params['granularity'] || :minutes).to_sym
+      quantity = params[:quantity] || 60
+
+      check_request_limits!(granularity, quantity)
+
+      events.inject({}) do |response, event|
+        response.merge(event => count_for(event, granularity, quantity))
+      end.to_json
+    end
 
     post '/track/:event' do
       increment_counters_for(params[:event])
@@ -120,11 +132,13 @@ module Duckweed
 
     # don't allow requests that would place an unreasonable load on the server,
     # or for which we won't have data anyway
-    def check_request_limits!
-      granularity = params[:granularity].to_sym
+    def check_request_limits!(granularity = params[:granularity], quantity = params[:quantity])
+      granularity = granularity.to_sym
+      quantity = quantity.to_i
+
       if !(interval = INTERVAL[granularity])
         halt 400, 'Bad Request'
-      elsif (params[:quantity].to_i * interval[:bucket_size]) > interval[:expiry]
+      elsif (quantity * interval[:bucket_size]) > interval[:expiry]
         halt 413, 'Request Entity Too Large'
       end
     end
@@ -161,7 +175,7 @@ module Duckweed
 
     def count_for(event, granularity, quantity)
       keys = keys_for(event, granularity.to_sym, quantity)
-      redis.mget(*keys).inject(0) { |memo, obj| memo + obj.to_i }.to_s
+      redis.mget(*keys).inject(0) { |memo, obj| memo + obj.to_i }
     end
 
     def keys_for(event, granularity, quantity)
