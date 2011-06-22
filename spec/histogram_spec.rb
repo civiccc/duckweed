@@ -184,6 +184,13 @@ describe Duckweed::App do
           end
         end
 
+        context "with a quantity+offset that exceeds the limit" do
+          it "returns a 413 status code" do
+            get "/histogram/#{event}/hours/100?offset=100"
+            last_response.status.should == 413
+          end
+        end
+
         it 'returns event frequencies in chronological order' do
           get "/histogram/#{event}/days/4"
           JSON[last_response.body]['item'].should == [0, 2, 4, 5]
