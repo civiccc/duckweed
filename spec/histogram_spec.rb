@@ -85,6 +85,11 @@ describe Duckweed::App do
           end
         end
 
+        it "gives you a full day's worth of data" do
+          get "/histogram/#{event}/minutes/#{60*24}"
+          last_response.should be_successful
+        end
+
         it 'returns event frequencies in chronological order' do
           get "/histogram/#{event}/minutes/4"
           JSON[last_response.body]['item'].should == [0, 3, 5, 2]

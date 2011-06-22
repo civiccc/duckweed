@@ -18,6 +18,11 @@ module Duckweed
   # rightmost data points droop unexpectedly.
   DEFAULT_OFFSET = 1
 
+  MINUTE = 60
+  HOUR   = MINUTE * 60
+  DAY    = HOUR * 24
+  YEAR   = DAY * 365
+
   class App < Sinatra::Base
     include UtilityMethods
     extend NotifyHoptoad
@@ -116,20 +121,33 @@ module Duckweed
       auth.provided? && auth.basic? && auth.credentials.first
     end
 
+    # The little bit of extra time on each bucket is so that we have a
+    # round number of complete buckets available for querying. For
+    # example, by having a day and a minute as the expiry time for the
+    # :minutes bucket, we let the user query for a full day of
+    # minute-resolution data. Were we to use just a day, then a query
+    # for a day's worth of data would be met with a 413, since the
+    # default offset is 1 (to ignore the current, half-baked bucket),
+    # and so the user would have to instead ask for 23 hours and 59
+    # minutes' worth of data, causing them to wonder just what kind of
+    # idiots wrote this app.
+    #
+    # There's no technical reason for the extra time; it's purely
+    # aesthetic.
     INTERVAL = {
       :minutes => {
-        :bucket_size  => 60,
-        :expiry       => 86400,       # keep minute-resolution data for last day
+        :bucket_size  => MINUTE,
+        :expiry       => DAY + MINUTE,
         :time_format  => '%I:%M%p'    # 10:11AM
       },
       :hours => {
-        :bucket_size  => 3600,
-        :expiry       => 86400 * 7,   # keep hour-resolution data for last week
+        :bucket_size  => HOUR,
+        :expiry       => DAY * 7 + HOUR,
         :time_format  => '%a %I%p'    # Sun 10AM
       },
       :days => {
-        :bucket_size  => 86400,
-        :expiry       => 86400 * 365, # keep day-resolution data for last year
+        :bucket_size  => DAY,
+        :expiry       => YEAR + DAY,
         :time_format  => '%b %d %Y'   # Jan 21 2011
       }
     }
