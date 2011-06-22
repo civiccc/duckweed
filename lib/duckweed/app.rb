@@ -14,6 +14,10 @@ module Duckweed
     'secret_token'  # Pingdom
   ]
 
+  # Ignore the most recent bucket. This prevents histograms whose
+  # rightmost data points droop unexpectedly.
+  DEFAULT_OFFSET = 1
+
   class App < Sinatra::Base
     include UtilityMethods
     extend NotifyHoptoad
@@ -132,13 +136,16 @@ module Duckweed
 
     # don't allow requests that would place an unreasonable load on the server,
     # or for which we won't have data anyway
-    def check_request_limits!(granularity = params[:granularity], quantity = params[:quantity])
+    def check_request_limits!(granularity = params[:granularity],
+        quantity = params[:quantity],
+        offset = params[:offset])
       granularity = granularity.to_sym
       quantity = quantity.to_i
+      offset = (offset || DEFAULT_OFFSET).to_i
 
       if !(interval = INTERVAL[granularity])
         halt 400, 'Bad Request'
-      elsif (quantity * interval[:bucket_size]) > interval[:expiry]
+      elsif ((quantity + offset) * interval[:bucket_size]) > interval[:expiry]
         halt 413, 'Request Entity Too Large'
       end
     end
@@ -190,7 +197,9 @@ module Duckweed
     end
 
     def bucket_indices(granularity, count)
-      bucket_idx = bucket_index(granularity) - count - (params[:offset] || 1).to_i
+      bucket_idx = bucket_index(granularity) -
+        count -
+        (params[:offset] || DEFAULT_OFFSET).to_i
       Array.new(count) do |i|
         bucket_idx += 1
       end
