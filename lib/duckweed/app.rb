@@ -137,17 +137,17 @@ module Duckweed
     INTERVAL = {
       :minutes => {
         :bucket_size  => MINUTE,
-        :expiry       => DAY + MINUTE,
+        :expiry       => DAY * 2 + MINUTE,
         :time_format  => '%I:%M%p'    # 10:11AM
       },
       :hours => {
         :bucket_size  => HOUR,
-        :expiry       => DAY * 7 + HOUR,
+        :expiry       => DAY * 28 + HOUR,
         :time_format  => '%a %I%p'    # Sun 10AM
       },
       :days => {
         :bucket_size  => DAY,
-        :expiry       => YEAR + DAY,
+        :expiry       => YEAR * 5 + DAY,
         :time_format  => '%b %d %Y'   # Jan 21 2011
       }
     }
