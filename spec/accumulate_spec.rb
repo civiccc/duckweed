@@ -70,17 +70,17 @@ describe Duckweed::App do
 
         context 'with a quantity that exceeds the expiry limit' do
           it 'fails' do
-            get "/accumulate/#{event}/minutes/1500" # 1500 minutes = 1 day, 1 hour
+            get "/accumulate/#{event}/minutes/3000" # 3000 minutes = 2 days, 2 hours
             last_response.should_not be_successful
           end
 
           it 'returns a 413 status code' do
-            get "/accumulate/#{event}/minutes/1500" # 1500 minutes = 1 day, 1 hour
+            get "/accumulate/#{event}/minutes/3000" # 3000 minutes = 2 days, 2 hours
             last_response.status.should == 413
           end
 
           it 'responds with "Request Entity Too Large"' do
-            get "/accumulate/#{event}/minutes/1500" # 1500 minutes = 1 day, 1 hour
+            get "/accumulate/#{event}/minutes/3000" # 3000 minutes = 2 days, 2 hours
             last_response.body.should =~ /request entity too large/i
           end
         end
@@ -117,17 +117,17 @@ describe Duckweed::App do
 
         context 'with a quantity that exceeds the expiry limit' do
           it 'fails' do
-            get "/accumulate/#{event}/hours/192" # 192 hours = 8 days
+            get "/accumulate/#{event}/hours/768" # 384 hours = 32 days
             last_response.should_not be_successful
           end
 
           it 'returns a 413 status code' do
-            get "/accumulate/#{event}/hours/192"
+            get "/accumulate/#{event}/hours/768"
             last_response.status.should == 413
           end
 
           it 'responds with "Request Entity Too Large"' do
-            get "/accumulate/#{event}/hours/192"
+            get "/accumulate/#{event}/hours/768"
             last_response.body.should =~ /request entity too large/i
           end
         end
@@ -164,17 +164,17 @@ describe Duckweed::App do
 
         context 'with a quantity that exceeds the expiry limit' do
           it 'fails' do
-            get "/accumulate/#{event}/days/400" # 400 days = 1 year, 35 days
+            get "/accumulate/#{event}/days/3200" # 1600 days = 8 years, 280 days
             last_response.should_not be_successful
           end
 
           it 'returns a 413 status code' do
-            get "/accumulate/#{event}/days/400"
+            get "/accumulate/#{event}/days/3200"
             last_response.status.should == 413
           end
 
           it 'responds with "Request Entity Too Large"' do
-            get "/accumulate/#{event}/days/400"
+            get "/accumulate/#{event}/days/3200"
             last_response.body.should =~ /request entity too large/i
           end
         end

@@ -91,7 +91,7 @@ describe Duckweed::App do
           post "/multicount", {
             :events => [event],
             :granularity => :minutes,
-            :quantity => 2500}
+            :quantity => 5000}
           last_response.status.should == 413
         end
       end
