@@ -109,17 +109,17 @@ describe Duckweed::App do
 
       context 'with a quantity that exceeds the expiry limit' do
         it 'fails' do
-          get "/count/#{event}/minutes/1500", default_params # 1 day, 1 hour
+          get "/count/#{event}/minutes/3000", default_params # 2 day, 2 hours
           last_response.should_not be_successful
         end
 
         it 'returns a 413 status code' do
-          get "/count/#{event}/minutes/1500", default_params
+          get "/count/#{event}/minutes/3000", default_params
           last_response.status.should == 413
         end
 
         it 'responds with "Request Entity Too Large"' do
-          get "/count/#{event}/minutes/1500", default_params
+          get "/count/#{event}/minutes/3000", default_params
           last_response.body.should =~ /request entity too large/i
         end
       end
@@ -168,17 +168,17 @@ describe Duckweed::App do
 
       context 'with a quantity that exceeds the expiry limit' do
         it 'fails' do
-          get "/count/#{event}/hours/192", default_params # 192 hours = 8 days
+          get "/count/#{event}/hours/768", default_params # 768 hours = 32 days
           last_response.should_not be_successful
         end
 
         it 'returns a 413 status code' do
-          get "/count/#{event}/hours/192", default_params
+          get "/count/#{event}/hours/768", default_params
           last_response.status.should == 413
         end
 
         it 'responds with "Request Entity Too Large"' do
-          get "/count/#{event}/hours/192", default_params
+          get "/count/#{event}/hours/768", default_params
           last_response.body.should =~ /request entity too large/i
         end
       end
@@ -226,17 +226,17 @@ describe Duckweed::App do
 
       context 'with a quantity that exceeds the expiry limit' do
         it 'fails' do
-          get "/count/#{event}/days/400", default_params # 400 days = 1 year, 35 days
+          get "/count/#{event}/days/3200", default_params # 3200 days = 8 years, 280 days
           last_response.should_not be_successful
         end
 
         it 'returns a 413 status code' do
-          get "/count/#{event}/days/400", default_params
+          get "/count/#{event}/days/3200", default_params
           last_response.status.should == 413
         end
 
         it 'responds with "Request Entity Too Large"' do
-          get "/count/#{event}/days/400", default_params
+          get "/count/#{event}/days/3200", default_params
           last_response.body.should =~ /request entity too large/i
         end
       end

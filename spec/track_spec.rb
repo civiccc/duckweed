@@ -168,24 +168,24 @@ describe Duckweed::App do
       end
     end
 
-    it 'expires minute-granularity data after a day and a minute' do
+    it 'expires minute-granularity data after 2 days and a minute' do
       Duckweed.redis.stub!(:expire)
       Duckweed.redis.should_receive(:expire).
-        with("duckweed:#{event}:minutes:#{@now.to_i / 60}", 86400 + 60)
+        with("duckweed:#{event}:minutes:#{@now.to_i / 60}", 172800 + 60)
       post "/track/#{event}", default_params
     end
 
-    it 'expires hour-granularity data after a week and an hour' do
+    it 'expires hour-granularity data after 4 weeks and an hour' do
       Duckweed.redis.stub!(:expire)
       Duckweed.redis.should_receive(:expire).
-        with("duckweed:#{event}:hours:#{@now.to_i / 3600}", 86400 * 7 + 3600)
+        with("duckweed:#{event}:hours:#{@now.to_i / 3600}", 86400 * 28 + 3600)
       post "/track/#{event}", default_params
     end
 
-    it 'expires day-granularity data after a year and a day' do
+    it 'expires day-granularity data after 5 years and a day' do
       Duckweed.redis.stub!(:expire)
       Duckweed.redis.should_receive(:expire).
-        with("duckweed:#{event}:days:#{@now.to_i / 86400}", 86400 * 366)
+        with("duckweed:#{event}:days:#{@now.to_i / 86400}", 86400 * 365 * 5 + 86400)
       post "/track/#{event}", default_params
     end
   end
