@@ -1,4 +1,5 @@
 require 'duckweed'
+require 'duckweed/geckoboard_methods'
 require 'duckweed/notify_hoptoad'
 require 'duckweed/utility_methods'
 require 'json'
@@ -24,6 +25,7 @@ module Duckweed
   YEAR   = DAY * 365
 
   class App < Sinatra::Base
+    include GeckoboardMethods
     include UtilityMethods
     extend NotifyHoptoad
 
@@ -49,12 +51,22 @@ module Duckweed
 
     get '/count/:event' do
       # default to last hour with minute-granularity
-      count_for(params[:event], :minutes, 60).to_s
+      count = count_for(params[:event], :minutes, 60).to_s
+      if params[:format] == "geckoboard_json"
+        geckoboard_jsonify_for_counts(count)
+      else
+        count
+      end
     end
 
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
-      count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i).to_s
+      count = count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i).to_s
+      if params[:format] == "geckoboard_json"
+        geckoboard_jsonify_for_counts(count)
+      else
+        count
+      end
     end
 
     # Useful for testing Hoptoad notifications
@@ -247,11 +259,10 @@ module Duckweed
 
     def histogram(event, granularity, quantity)
       values, times = values_and_times_for(granularity, event, quantity)
-      geckoboard_jsonify(values, times)
+      geckoboard_jsonify_for_chart(values, times)
     end
 
     def accumulate(event, granularity, quantity)
-
       # Fetch all the unexpired data we have, so that we can start counting from "1"
       values, times = values_and_times_for(granularity, event, max_buckets(granularity))
 
@@ -261,7 +272,7 @@ module Duckweed
       end
 
       # return only the quantity we asked for
-      geckoboard_jsonify(values[-quantity.to_i..-1], times[-quantity.to_i..-1])
+      geckoboard_jsonify_for_chart(values[-quantity.to_i..-1], times[-quantity.to_i..-1])
     end
 
     def times_for(granularity, quantity)
@@ -279,19 +290,5 @@ module Duckweed
       times       = times_for(granularity, quantity)
       [values, times]
     end
-
-    def geckoboard_jsonify(values, times)
-      min, max    = values.min, values.max
-      mid         = (max + min).to_f / 2
-      {
-        :item     => values,
-        :settings => {
-          :axisx  => times,
-          :axisy  => [min, mid, max],
-          :colour => 'ff9900'
-        }
-      }.to_json
-    end
-
   end
 end
