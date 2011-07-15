@@ -53,6 +53,6 @@ RSpec.configure do |conf|
   end
 
   conf.before(:each) do
-    Duckweed.redis.reset!
+    Duckweed.redis.flushall
   end
 end

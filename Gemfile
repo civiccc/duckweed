@@ -13,6 +13,7 @@ group(:test) do
   gem "rack-test"
   gem "rake"
   gem "ZenTest"
+  gem "mock_redis"
 end
 
 group(:development) do

@@ -11,6 +11,7 @@ GEM
       builder
     json (1.4.3)
     linecache (0.43)
+    mock_redis (0.0.2)
     rack (1.2.2)
     rack-test (0.5.7)
       rack (>= 1.0)
@@ -41,6 +42,7 @@ DEPENDENCIES
   ZenTest
   hoptoad_notifier
   json (= 1.4.3)
+  mock_redis
   rack-test
   rake
   redis
