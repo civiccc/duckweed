@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Duckweed::App do
   let(:event) { 'test-event-47781' }
   let(:app) { described_class }
-  let(:default_params) { { :auth_token => Duckweed::AUTH_TOKENS.first } }
+  let(:default_params) { { :auth_token => Duckweed::Token.authorize('foo') } }
 
   before { freeze_time }
 
@@ -16,7 +16,7 @@ describe Duckweed::App do
 
     context 'with an authentication token' do
       before do
-        authorize Duckweed::AUTH_TOKENS.first, ''
+        authorize Duckweed::Token.authorize('bar'), ''
       end
 
       context "when we have no data in some buckets" do

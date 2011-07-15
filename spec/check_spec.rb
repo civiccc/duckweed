@@ -3,7 +3,8 @@ require 'spec_helper'
 describe Duckweed::App do
   let(:event) { 'test-event-47781' }
   let(:app) { described_class }
-  let(:default_params) { { :auth_token => Duckweed::AUTH_TOKENS.first } }
+  let(:default_params) {
+    {:auth_token => Duckweed::Token.authorize('kr8ixlohn7bv5ny')}}
 
   before { freeze_time }
 

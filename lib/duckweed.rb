@@ -2,6 +2,7 @@ require 'redis'
 
 module Duckweed
   autoload :App, "duckweed/app"
+  autoload :Token, "duckweed/token"
 
   class << self
     attr_accessor :redis

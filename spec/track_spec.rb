@@ -3,7 +3,9 @@ require "spec_helper"
 describe Duckweed::App do
   let(:event) { 'test-event-47781' }
   let(:app) { described_class }
-  let(:default_params) { { :auth_token => Duckweed::AUTH_TOKENS.first } }
+  let(:default_params) do
+    { :auth_token => Duckweed::Token.authorize('aqhrt8f49aghz') }
+  end
 
   describe "POST /track/:event" do
     before { freeze_time }
@@ -163,7 +165,7 @@ describe Duckweed::App do
         post "/track/#{event}", default_params.merge(:timestamp => long_ago)
 
         # NB: the redis mock gets cleared before every example
-        Duckweed.redis.keys('*').should ==
+        Duckweed.redis.keys("duckweed:#{event}:*").should ==
           ["duckweed:#{event}:days:#{long_ago / 86400}"]
       end
     end

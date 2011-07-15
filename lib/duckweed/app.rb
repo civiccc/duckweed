@@ -7,14 +7,6 @@ require 'sinatra'
 require 'hoptoad_notifier'
 
 module Duckweed
-  # we use different tokens for internal/external use so that we
-  # can revoke tokens given to third parties without affecting our apps
-  AUTH_TOKENS = [
-    'secret_token', # internal use
-    'secret_token', # Geckoboard
-    'secret_token'  # Pingdom
-  ]
-
   # Ignore the most recent bucket. This prevents histograms whose
   # rightmost data points droop unexpectedly.
   DEFAULT_OFFSET = 1
@@ -121,7 +113,8 @@ module Duckweed
     end
 
     def authenticated?
-      AUTH_TOKENS.include?(auth_token_via_params || auth_token_via_http_basic_auth)
+      Token.authorized?(auth_token_via_params ||
+        auth_token_via_http_basic_auth)
     end
 
     def auth_token_via_params

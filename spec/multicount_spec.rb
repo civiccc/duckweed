@@ -4,7 +4,7 @@ describe Duckweed::App do
   let(:event) { 'test-event-28486' }
   let(:event2) { 'test-event2-71170!' }
   let(:app) { described_class }
-  let(:default_params) { { :auth_token => Duckweed::AUTH_TOKENS.first } }
+  let(:default_params) { { :auth_token => Duckweed::Token.authorize('fheaw') } }
 
   before { freeze_time }
 
@@ -22,7 +22,7 @@ describe Duckweed::App do
       end
 
       before do
-        authorize Duckweed::AUTH_TOKENS.first, ''
+        authorize(Duckweed::Token.authorize('y8iuyta348er'), '')
       end
 
       it "returns data for the events in the right order" do

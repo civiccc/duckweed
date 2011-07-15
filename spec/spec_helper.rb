@@ -27,7 +27,7 @@ module SpecHelpers
     end
 
     post "/track/#{event_name}", params
-
+    last_response.should be_successful
   end
 
   def freeze_time
