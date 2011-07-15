@@ -13,6 +13,18 @@ describe Duckweed::Token do
       described_class.authorize(token)
       described_class.authorized?(token).should be_true
     end
+
+    it "raises an error on nil" do
+      lambda do
+        described_class.authorize(nil)
+      end.should raise_error(ArgumentError)
+    end
+
+    it "raises an error on empty string" do
+      lambda do
+        described_class.authorize("")
+      end.should raise_error(ArgumentError)
+    end
   end
 
   context ".deauthorize(token)" do
