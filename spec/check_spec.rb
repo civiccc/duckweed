@@ -11,7 +11,7 @@ describe Duckweed::App do
   describe 'GET /check/:event' do
     let (:params_with_threshold) { default_params.merge(:threshold => 3) }
 
-    it_should_behave_like 'pages with auth' do
+    it_should_behave_like 'pages needing readonly auth' do
       def do_request
         get "/check/#{event}", {}
       end

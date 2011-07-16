@@ -9,7 +9,7 @@ describe Duckweed::App do
   before { freeze_time }
 
   describe 'GET /multicount?e[]=event1' do
-    it_should_behave_like 'pages with auth' do
+    it_should_behave_like 'pages needing readonly auth' do
       def do_request
         post "/multicount", {'events' => [event]}
       end

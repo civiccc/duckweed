@@ -8,7 +8,7 @@ describe Duckweed::App do
   before { freeze_time }
 
   describe 'GET /count/:event' do
-    it_should_behave_like 'pages with auth' do
+    it_should_behave_like 'pages needing readonly auth' do
       def do_request
         get "/count/#{event}", {}
       end

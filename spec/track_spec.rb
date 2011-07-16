@@ -10,7 +10,7 @@ describe Duckweed::App do
   describe "POST /track/:event" do
     before { freeze_time }
 
-    it_should_behave_like 'pages with auth' do
+    it_should_behave_like 'pages needing rw auth' do
       def do_request
         post "/track/#{event}", {}
       end

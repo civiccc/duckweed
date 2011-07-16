@@ -21,11 +21,11 @@ module Duckweed
     include UtilityMethods
     extend NotifyHoptoad
 
-    # routes accessible without authentication:
+    # routes accessible without authorization:
     AUTH_WHITELIST = ['/health']
 
     before do
-      unless AUTH_WHITELIST.include?(request.path_info) || authenticated?
+      unless AUTH_WHITELIST.include?(request.path_info) || authorized?
         halt 403, 'Forbidden'
       end
     end
@@ -102,6 +102,9 @@ module Duckweed
     end
 
     post '/track/:event' do
+      unless authorized?('w')
+        halt 403, "Forbidden"
+      end
       increment_counters_for(params[:event])
       'OK'
     end
@@ -112,9 +115,9 @@ module Duckweed
       Duckweed.redis
     end
 
-    def authenticated?
+    def authorized?(permission='r')
       Token.authorized?(auth_token_via_params ||
-        auth_token_via_http_basic_auth)
+        auth_token_via_http_basic_auth, permission)
     end
 
     def auth_token_via_params
