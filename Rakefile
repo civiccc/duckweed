@@ -11,8 +11,9 @@ task :lib do
   require 'duckweed'
 end
 
-task :authorize, :auth_token, :needs => :lib do |t, args|
-  Duckweed::Token.authorize(args[:auth_token])
+task :authorize, :auth_token, :permissions, :needs => :lib do |t, args|
+  permissions = args[:permissions] || "rw"
+  Duckweed::Token.authorize(args[:auth_token], permissions)
 end
 
 task :deauthorize, :auth_token, :needs => :lib do |t, args|
