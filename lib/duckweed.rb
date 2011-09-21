@@ -9,7 +9,7 @@ module Duckweed
   end
 
   begin
-    self.redis = Redis.new
+    self.redis = Redis.new(:timeout => 30)
   rescue Errno::ECONNREFUSED
     # do nothing; we'll just have a nil redis
   end
