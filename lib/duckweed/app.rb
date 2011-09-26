@@ -31,14 +31,16 @@ module Duckweed
     end
 
     get '/check/:event' do
+      @event = Event.new(params[:event])
       require_threshold!
-      check_threshold(params[:event], :minutes, 60)
+      check_threshold(:minutes, 60)
     end
 
     get '/check/:event/:granularity/:quantity' do
+      @event = Event.new(params[:event])
       require_threshold!
       check_request_limits!
-      check_threshold(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
+      check_threshold(params[:granularity].to_sym, params[:quantity].to_i)
     end
 
     get '/count/:event' do
@@ -238,9 +240,11 @@ module Duckweed
       end
     end
 
-    def check_threshold(event, granularity, quantity)
-      threshold = params[:threshold]
-      count = count_for(event, granularity, quantity)
+    def check_threshold(granularity, quantity)
+      count = @event.occurrences(
+        :granularity => granularity,
+        :quantity => quantity)
+      threshold = params[:threshold].to_i
       if count.to_i >= threshold.to_i
         "GOOD: #{count}"
       else
