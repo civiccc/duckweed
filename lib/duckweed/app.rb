@@ -44,8 +44,8 @@ module Duckweed
     end
 
     get '/count/:event' do
-      # default to last hour with minute-granularity
-      count = count_for(params[:event], :minutes, 60).to_s
+      @event = Event.new(params[:event])
+      count = @event.occurrences(:granularity => :minutes, :quantity => 60).to_s
       if params[:format] == "geckoboard_json"
         geckoboard_jsonify_for_counts(count)
       else
