@@ -171,9 +171,9 @@ module Duckweed
       quantity = quantity.to_i
       offset = (offset || DEFAULT_OFFSET).to_i
 
-      if !(interval = INTERVAL[granularity])
+      if !Event.valid_granularity?(granularity)
         halt 400, 'Bad Request'
-      elsif ((quantity + offset) * interval[:bucket_size]) > interval[:expiry]
+      elsif (quantity + offset) > Event.bucket_count(granularity)
         halt 413, 'Request Entity Too Large'
       end
     end

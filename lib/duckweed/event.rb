@@ -6,7 +6,6 @@ module Duckweed
     DAY            = HOUR * 24
     YEAR           = DAY * 365
 
-
     # The little bit of extra time on each bucket is so that we have a
     # round number of complete buckets available for querying. For
     # example, by having a day and a minute as the expiry time for the
@@ -37,6 +36,14 @@ module Duckweed
         :time_format  => '%b %d %Y'   # Jan 21 2011
       }
     }
+
+    def self.valid_granularity?(g)
+      INTERVAL.has_key?(g)
+    end
+
+    def self.bucket_count(granularity)
+      INTERVAL[granularity][:expiry] / INTERVAL[granularity][:bucket_size]
+    end
 
     def occurrences(args={})
       keys = keys_for(args)
