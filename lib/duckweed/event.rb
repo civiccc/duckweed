@@ -53,7 +53,7 @@ module Duckweed
       super
     end
 
-    def occurrences(args={})
+    def total_occurrences(args={})
       keys = keys_for(args)
       redis.mget(*keys).map(&:to_i).inject(0, &:+)
     end

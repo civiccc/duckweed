@@ -53,7 +53,7 @@ module Duckweed
     end
 
     get '/count/:event' do
-      count = the_event.occurrences(:granularity => :minutes, :quantity => 60).to_s
+      count = the_event.total_occurrences(:granularity => :minutes, :quantity => 60).to_s
       if params[:format] == "geckoboard_json"
         geckoboard_jsonify_for_counts(count)
       else
@@ -63,7 +63,7 @@ module Duckweed
 
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
-      count = the_event.occurrences.to_s
+      count = the_event.total_occurrences.to_s
 
       if params[:format] == "geckoboard_json"
         geckoboard_jsonify_for_counts(count)
@@ -250,7 +250,7 @@ module Duckweed
     end
 
     def check_threshold(args={})
-      count = the_event.occurrences(args)
+      count = the_event.total_occurrences(args)
       threshold = params[:threshold].to_i
       if count.to_i >= threshold.to_i
         "GOOD: #{count}"
