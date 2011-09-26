@@ -30,22 +30,25 @@ module Duckweed
       end
     end
 
+    helpers do
+      def the_event
+        @the_event ||= Event.new(params[:event])
+      end
+    end
+
     get '/check/:event' do
-      @event = Event.new(params[:event])
       require_threshold!
       check_threshold(:minutes, 60)
     end
 
     get '/check/:event/:granularity/:quantity' do
-      @event = Event.new(params[:event])
       require_threshold!
       check_request_limits!
       check_threshold(params[:granularity].to_sym, params[:quantity].to_i)
     end
 
     get '/count/:event' do
-      @event = Event.new(params[:event])
-      count = @event.occurrences(:granularity => :minutes, :quantity => 60).to_s
+      count = the_event.occurrences(:granularity => :minutes, :quantity => 60).to_s
       if params[:format] == "geckoboard_json"
         geckoboard_jsonify_for_counts(count)
       else
@@ -241,7 +244,7 @@ module Duckweed
     end
 
     def check_threshold(granularity, quantity)
-      count = @event.occurrences(
+      count = the_event.occurrences(
         :granularity => granularity,
         :quantity => quantity)
       threshold = params[:threshold].to_i
