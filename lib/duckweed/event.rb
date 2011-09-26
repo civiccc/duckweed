@@ -1,5 +1,5 @@
 module Duckweed
-  class Event < Struct.new(:name)
+  class Event < Struct.new(:name, :granularity, :quantity, :offset, :now)
     DEFAULT_OFFSET = 1
     MINUTE         = 60
     HOUR           = MINUTE * 60
@@ -45,6 +45,14 @@ module Duckweed
       INTERVAL[granularity][:expiry] / INTERVAL[granularity][:bucket_size]
     end
 
+
+    def initialize(*args)
+      unless args[0]
+        raise ArgumentError, "Event name is required"
+      end
+      super
+    end
+
     def occurrences(args={})
       keys = keys_for(args)
       redis.mget(*keys).map(&:to_i).inject(0, &:+)
@@ -57,12 +65,12 @@ module Duckweed
     end
 
     def keys_for(args={})
-      now         = (args[:now] || Time.now).to_i
-      offset      = args[:offset] || DEFAULT_OFFSET
-      count       = args[:quantity]
-      granularity = args[:granularity]
+      now         = (args[:now]         || self.now         || Time.now      ).to_i
+      offset      =  args[:offset]      || self.offset      || DEFAULT_OFFSET
+      count       =  args[:quantity]    || self.quantity
+      granularity =  args[:granularity] || self.granularity
 
-      bucket_name = "duckweed:#{self.name}:#{args[:granularity]}"
+      bucket_name = "duckweed:#{self.name}:#{granularity}"
       newest_bucket_index = (now / INTERVAL[granularity][:bucket_size]) - offset
 
       # NB: this returns data from most recent to least recent. If
