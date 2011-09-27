@@ -92,6 +92,16 @@ module Duckweed
       count       =  args[:quantity]    || self.quantity
       granularity =  args[:granularity] || self.granularity
 
+      if count == :all
+        # we have to subtract the offset so that you get all the
+        # data you requested without spurious 0s at the start.
+        #
+        # one could argue that :quantity => :all, :offset => 1 is
+        # meaningless, but since the default offset is nonzero, that
+        # makes for a bad experience for the caller.
+        count = self.class.bucket_count(granularity) - offset
+      end
+
       newest_bucket_index = (now / INTERVAL[granularity][:bucket_size]) - offset
 
       (0...count).map do |i|

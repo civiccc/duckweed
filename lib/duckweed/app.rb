@@ -91,12 +91,12 @@ module Duckweed
     end
 
     get '/accumulate/:event' do
-      accumulate(params[:event], :minutes, 60)
+      accumulate(:granularity => :minutes, :quantity => 60)
     end
 
     get '/accumulate/:event/:granularity/:quantity' do
       check_request_limits!
-      accumulate(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
+      accumulate
     end
 
     # Only using post to get around request-length limitations w/get
@@ -229,10 +229,6 @@ module Duckweed
       end
     end
 
-    def max_buckets(granularity)
-      INTERVAL[granularity][:expiry] / INTERVAL[granularity][:bucket_size]
-    end
-
     def bucket_indices(granularity, count)
       bucket_idx = bucket_index(granularity) -
         count -
@@ -269,9 +265,9 @@ module Duckweed
       geckoboard_jsonify_for_chart(values, [times[0], times[-1], times[times.size/2]])
     end
 
-    def accumulate(event, granularity, quantity)
+    def accumulate(args={})
       # Fetch all the unexpired data we have, so that we can start counting from "1"
-      values, times = values_and_times_for(granularity, event, max_buckets(granularity))
+      times, values = the_event.occurrences(args.merge(:quantity => :all))
 
       # massage the values to be cumulative
       values = values.inject([]) do |result, element|
@@ -279,6 +275,7 @@ module Duckweed
       end
 
       # return only the quantity we asked for
+      quantity = the_event.quantity
       geckoboard_jsonify_for_chart(values[-quantity.to_i..-1], times[-quantity.to_i..-1])
     end
 
