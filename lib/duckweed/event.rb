@@ -58,6 +58,15 @@ module Duckweed
       redis.mget(*keys).map(&:to_i).inject(0, &:+)
     end
 
+    def occurrences(args={})
+      granularity = args[:granularity] || self.granularity
+
+      times  = indices_for(args).map{|i| index_to_time(i, granularity)}
+      keys   = keys_for(args)
+      values = redis.mget(*keys).map(&:to_i)
+      [times, values]
+    end
+
     private
 
     def redis
@@ -65,22 +74,29 @@ module Duckweed
     end
 
     def keys_for(args={})
+      granularity = args[:granularity] || self.granularity
+      bucket_name = "duckweed:#{self.name}:#{granularity}"
+
+      indices_for(args).map do |idx|
+        "#{bucket_name}:#{idx}"
+      end
+    end
+
+    def index_to_time(index, granularity)
+      Time.at(index * INTERVAL[granularity][:bucket_size])
+    end
+
+    def indices_for(args={})
       now         = (args[:now]         || self.now         || Time.now      ).to_i
       offset      =  args[:offset]      || self.offset      || DEFAULT_OFFSET
       count       =  args[:quantity]    || self.quantity
       granularity =  args[:granularity] || self.granularity
 
-      bucket_name = "duckweed:#{self.name}:#{granularity}"
       newest_bucket_index = (now / INTERVAL[granularity][:bucket_size]) - offset
 
-      # NB: this returns data from most recent to least recent. If
-      # ordering is ever a problem, we'll probably want to reverse
-      # this so that data comes out oldest-first.
       (0...count).map do |i|
         newest_bucket_index - i
-      end.map do |idx|
-        "#{bucket_name}:#{idx}"
-      end
+      end.reverse
     end
 
   end

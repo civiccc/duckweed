@@ -82,12 +82,12 @@ module Duckweed
     end
 
     get '/histogram/:event' do
-      histogram(params[:event], :minutes, 60)
+      histogram(:granularity => minutes, :quantity => 60)
     end
 
     get '/histogram/:event/:granularity/:quantity' do
       check_request_limits!
-      histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
+      histogram
     end
 
     get '/accumulate/:event' do
@@ -264,9 +264,9 @@ module Duckweed
       first_available_bucket_time < timestamp
     end
 
-    def histogram(event, granularity, quantity)
-      values, times = values_and_times_for(granularity, event, quantity)
-      geckoboard_jsonify_for_chart(values, times)
+    def histogram(args={})
+      times, values = the_event.occurrences(args)
+      geckoboard_jsonify_for_chart(values, [times[0], times[-1], times[times.size/2]])
     end
 
     def accumulate(event, granularity, quantity)
