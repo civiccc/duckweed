@@ -101,14 +101,20 @@ module Duckweed
 
     # Only using post to get around request-length limitations w/get
     post '/multicount' do
-      events = params[:events] || []
       granularity = (params['granularity'] || :minutes).to_sym
-      quantity = params[:quantity] || 60
+      quantity = (params[:quantity] || 60).to_i
 
       check_request_limits!(granularity, quantity)
 
+      events = (params[:events] || []).map do |name|
+        Event.new(name).tap do |e|
+          e.granularity = granularity
+          e.quantity = quantity
+        end
+      end
+
       events.inject({}) do |response, event|
-        response.merge(event => count_for(event, granularity, quantity))
+        response.merge(event.name => event.total_occurrences)
       end.to_json
     end
 
