@@ -151,12 +151,12 @@ describe Duckweed::App do
       end
 
       it 'uses the timestamp rather than Time.now' do
-        Duckweed.redis.should_receive(:incr).
-          with("duckweed:#{event}:minutes:#{@timestamp / 60}")
-        Duckweed.redis.should_receive(:incr).
-          with("duckweed:#{event}:hours:#{@timestamp / 3600}")
-        Duckweed.redis.should_receive(:incr).
-          with("duckweed:#{event}:days:#{@timestamp / 86400}")
+        Duckweed.redis.should_receive(:incrby).
+          with("duckweed:#{event}:minutes:#{@timestamp / 60}", 1)
+        Duckweed.redis.should_receive(:incrby).
+          with("duckweed:#{event}:hours:#{@timestamp / 3600}", 1)
+        Duckweed.redis.should_receive(:incrby).
+          with("duckweed:#{event}:days:#{@timestamp / 86400}",1 )
         post "/track/#{event}", default_params.merge(:timestamp => @timestamp)
       end
 

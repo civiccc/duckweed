@@ -122,7 +122,7 @@ module Duckweed
       unless authorized?('w')
         halt 403, "Forbidden"
       end
-      increment_counters_for(params[:event])
+      the_event.occurred
       'OK'
     end
 

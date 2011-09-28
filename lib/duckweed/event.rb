@@ -58,6 +58,29 @@ module Duckweed
       values.inject(0, &:+)
     end
 
+    def occurred(args={})
+      now = (args[:now] || self.now).to_i
+      # Not sure how I feel about the use of :quantity for both
+      # number-of-buckets and how-much-to-increment-by. On the one
+      # hand, they're totally different, so they should have different
+      # names. On the other hand, "quantity" is a really generic name,
+      # and I don't want the user to have to use two different words
+      # for quantity at two different times.
+      #
+      # tl;dr: naming things is hard
+      quantity = args[:quantity] || self.quantity || 1
+
+      INTERVAL.keys.each do |granularity|
+        index = (now / INTERVAL[granularity][:bucket_size])
+        key = "duckweed:#{self.name}:#{granularity}:#{index}"
+
+        if (Time.now.to_i - INTERVAL[granularity][:expiry]) < now
+          redis.incrby(key, quantity)
+          redis.expire(key, INTERVAL[granularity][:expiry])
+        end
+      end
+    end
+
     def occurrences(args={})
       granularity = args[:granularity] || self.granularity
 
