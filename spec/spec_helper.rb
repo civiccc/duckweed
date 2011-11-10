@@ -17,14 +17,12 @@ module SpecHelpers
     event_name  = params[:event] || event
     event_time  = params[:at]
     event_count = params[:times]
+    event_group = params[:group]
 
     params = default_params.dup
-    if event_time
-      params.merge!(:timestamp => event_time.to_i)
-    end
-    if event_count
-      params.merge!(:quantity => event_count)
-    end
+    params.merge!(:timestamp => event_time.to_i) if event_time
+    params.merge!(:quantity => event_count) if event_count
+    params.merge!(:group => event_group) if event_group
 
     post "/track/#{event_name}", params
     last_response.should be_successful

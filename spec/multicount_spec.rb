@@ -86,6 +86,37 @@ describe Duckweed::App do
         JSON[last_response.body][event].should == 1
       end
 
+      context 'with a group param' do
+        let(:group) { 'test-group' }
+        let(:group2) { 'another-test-group' }
+        let(:event3) { 'third-event' }
+
+        before do
+          event_happened(:event => event, :group => group)
+          event_happened(:event => event2, :group => group)
+          event_happened(:event => event, :group => group2)
+          event_happened(:event => event3, :group => group2)
+        end
+
+        it 'retrieves events for a single group' do
+          post_multicount([], :group => group)
+
+          JSON[last_response.body].keys.sort.should == [event, event2].sort
+        end
+
+        it 'retrieves unique events for multiple groups' do
+          post_multicount([], :group => [group, group2])
+          JSON[last_response.body].keys.sort.should ==
+            [event, event2, event3].sort
+        end
+
+        it 'includes individual events' do
+          post_multicount([event3], :group => group)
+          JSON[last_response.body].keys.sort.should ==
+            [event, event2, event3].sort
+        end
+      end
+
       context 'with a quantity that exceeds the expiry limit' do
         it 'returns a 413 status code' do
           post "/multicount", {

@@ -170,6 +170,25 @@ describe Duckweed::App do
       end
     end
 
+    context 'with a group param' do
+      it 'adds event to a single group set in Redis' do
+        params = default_params.merge(:group => :grp)
+        expect { post "/track/#{event}", params }.to change {
+          Duckweed.redis.smembers("duckweed-group:grp")
+        }.from([]).to([event.to_s])
+      end
+
+      it 'adds event to multiple group sets in Redis' do
+        params = default_params.merge(:group => [:grp, :grp2])
+        expect { post "/track/#{event}", params }.to change {
+          [
+            Duckweed.redis.smembers("duckweed-group:grp"),
+            Duckweed.redis.smembers("duckweed-group:grp2")
+          ]
+        }.from([[]] * 2).to([[event.to_s]] * 2)
+      end
+    end
+
     it 'expires minute-granularity data after 2 days and a minute' do
       Duckweed.redis.stub!(:expire)
       Duckweed.redis.should_receive(:expire).

@@ -88,9 +88,16 @@ module Duckweed
       accumulate(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
+    get '/group/:group' do
+      group_members(params[:group]).to_json
+    end
+
     # Only using post to get around request-length limitations w/get
     post '/multicount' do
       events = params[:events] || []
+      events += Array(params[:group]).map{|group| group_members(group)}.flatten
+      events.uniq!
+
       granularity = (params['granularity'] || :minutes).to_sym
       quantity = params[:quantity] || 60
 
@@ -105,6 +112,7 @@ module Duckweed
       unless authorized?('w')
         halt 403, "Forbidden"
       end
+      add_to_groups(params[:group], params[:event]) if params[:group]
       increment_counters_for(params[:event])
       'OK'
     end
@@ -159,6 +167,8 @@ module Duckweed
         :time_format  => '%b %d %Y'   # Jan 21 2011
       }
     }
+
+    MAX_EXPIRY = INTERVAL.values.collect{|i| i[:expiry]}.max
 
     # don't allow requests that would place an unreasonable load on the server,
     # or for which we won't have data anyway
@@ -216,6 +226,23 @@ module Duckweed
       bucket_indices(granularity, count).map do |idx|
         "duckweed:#{event}:#{granularity}:#{idx}"
       end
+    end
+
+    def key_for_group(group)
+      "duckweed-group:#{group}"
+    end
+
+    def add_to_groups(groups, event)
+      Array(groups).each do |group|
+        key = key_for_group(group)
+        redis.sadd(key, event)
+        # unused groups expire with their events
+        redis.expire(key, MAX_EXPIRY)
+      end
+    end
+
+    def group_members(group)
+      redis.smembers(key_for_group(group))
     end
 
     def max_buckets(granularity)
