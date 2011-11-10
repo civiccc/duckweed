@@ -8,6 +8,16 @@ describe Duckweed::App do
 
   before { freeze_time }
 
+  before do
+    events.each do |event|
+      event_happened(
+        :event => event,
+        :group => group,
+        :times => 1,
+        :at => @now - MINUTE)
+    end
+  end
+
   describe 'GET /group/:group' do
     it_should_behave_like 'pages needing readonly auth' do
       def do_request
@@ -29,15 +39,18 @@ describe Duckweed::App do
 
     context 'with group having recorded events' do
       it 'returns group event keys' do
-        events.each do |event|
-          event_happened(
-            :event => event,
-            :group => group)
-        end
-
         get "/group/#{group}", default_params
-
         JSON[last_response.body].sort.should == events.sort
+      end
+    end
+  end
+
+  describe 'GET /group_count/:group' do
+    context 'with group having recorded events' do
+      it 'returns sum of counts of events in group' do
+        pp Duckweed.redis.keys 'duckweed*'
+        get "/group_count/#{group}", default_params
+        last_response.body.should == '2'
       end
     end
   end

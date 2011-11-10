@@ -44,21 +44,13 @@ module Duckweed
     get '/count/:event' do
       # default to last hour with minute-granularity
       count = count_for(params[:event], :minutes, 60).to_s
-      if params[:format] == "geckoboard_json"
-        geckoboard_jsonify_for_counts(count)
-      else
-        count
-      end
+      format_count(count, params)
     end
 
     get '/count/:event/:granularity/:quantity' do
       check_request_limits!
       count = count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i).to_s
-      if params[:format] == "geckoboard_json"
-        geckoboard_jsonify_for_counts(count)
-      else
-        count
-      end
+      format_count(count, params)
     end
 
     # Useful for testing Hoptoad notifications
@@ -92,11 +84,24 @@ module Duckweed
       group_members(params[:group]).to_json
     end
 
+    get '/group_count/:group' do
+      count = group_members(params[:group]).map do |event|
+        count_for(event, :minutes, 60)
+      end.reduce(0, &:+).to_s
+      format_count(count, params)
+    end
+
+    get '/group_count/:group/:granularity/:quantity' do
+      count = group_members(params[:group]).map do |event|
+        count_for(event, params[:granularity].to_sym, params[:quantity].to_i)
+      end.reduce(0, &:+).to_s
+      format_count(count, params)
+    end
+
     # Only using post to get around request-length limitations w/get
     post '/multicount' do
       events = params[:events] || []
-      events += Array(params[:group]).map{|group| group_members(group)}.flatten
-      events.uniq!
+      events += group_members(params[:group]) if params[:group]
 
       granularity = (params['granularity'] || :minutes).to_sym
       quantity = params[:quantity] || 60
@@ -135,6 +140,14 @@ module Duckweed
     def auth_token_via_http_basic_auth
       auth = Rack::Auth::Basic::Request.new(request.env)
       auth.provided? && auth.basic? && auth.credentials.first
+    end
+
+    def format_count(count, params)
+      if params[:format] == "geckoboard_json"
+        geckoboard_jsonify_for_counts(count)
+      else
+        count
+      end
     end
 
     # The little bit of extra time on each bucket is so that we have a
@@ -242,7 +255,8 @@ module Duckweed
     end
 
     def group_members(group)
-      redis.smembers(key_for_group(group))
+      keys = Array(group).map {|g| key_for_group(g) }
+      redis.sunion(*keys)
     end
 
     def max_buckets(granularity)
