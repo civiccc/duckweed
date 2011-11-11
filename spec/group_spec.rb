@@ -48,7 +48,6 @@ describe Duckweed::App do
   describe 'GET /group_count/:group' do
     context 'with group having recorded events' do
       it 'returns sum of counts of events in group' do
-        pp Duckweed.redis.keys 'duckweed*'
         get "/group_count/#{group}", default_params
         last_response.body.should == '2'
       end
