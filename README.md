@@ -1,5 +1,7 @@
 # Duckweed
 
+<img src="https://github.com/causes/duckweed/raw/master/public/icon.png" />
+
 Duckweed is a general-purpose metrics service that can be used to count things.
 
 It consists of a simple Sinatra front-end and a Redis back-end. No
