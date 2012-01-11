@@ -71,6 +71,16 @@ module Duckweed
       histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
+    get '/histogram-delta/:event_a/:event_b' do
+      histogram_delta(params[:event_a], params[:event_b], :minutes, 60)
+    end
+
+    get '/histogram-delta/:event_a/:event_b/:granularity/:quantity' do
+      check_request_limits!
+      histogram_delta(params[:event_a], params[:event_b],
+                      params[:granularity].to_sym, params[:quantity].to_i)
+    end
+
     get '/accumulate/:event' do
       accumulate(params[:event], :minutes, 60)
     end
@@ -297,6 +307,13 @@ module Duckweed
     def histogram(event, granularity, quantity)
       values, times = values_and_times_for(granularity, event, quantity)
       geckoboard_jsonify_for_chart(values, times)
+    end
+
+    def histogram_delta(event_a, event_b, granularity, quantity)
+      values_a, times_a = values_and_times_for(granularity, event_a, quantity)
+      values_b, times_b = values_and_times_for(granularity, event_b, quantity)
+      values = values_a.zip(values_b).map {|a, b| a - b}
+      geckoboard_jsonify_for_chart(values, times_a)
     end
 
     def accumulate(event, granularity, quantity)
