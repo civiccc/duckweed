@@ -1,11 +1,63 @@
 require 'spec_helper'
 
 describe Duckweed::App do
-  let(:event) { 'test-event-47781' }
-  let(:app) { described_class }
+  let(:event)          { 'test-event-47781' }
+  let(:another_event)  { 'test-event-47782' }
+  let(:app)            { described_class }
   let(:default_params) { { :auth_token => Duckweed::Token.authorize('foo') } }
 
   before { freeze_time }
+
+  describe 'GET /histogram-delta/:event_a/:event_b/:granularity/:quantity' do
+    it_should_behave_like 'pages needing readonly auth' do
+      def do_request
+        get "/histogram-delta/#{event}/#{another_event}/minutes/60"
+      end
+    end
+
+    context 'with an authentication token' do
+      before do
+        authorize Duckweed::Token.authorize('bar'), ''
+      end
+
+      context "two identical events" do
+        before do
+          [event, another_event].each do |event|
+            10.times.each do |i|
+              event_happened(
+                :event => event, :times => 1, :at => Time.now - (i * MINUTE))
+            end
+          end
+        end
+
+        it 'sums to zero if the two event counts are identical' do
+          get "/histogram-delta/#{event}/#{another_event}/minutes/60"
+          JSON[last_response.body]["item"].inject(0, &:+).should == 0
+        end
+
+        it 'sums to zero if the same event is used for both' do
+          get "/histogram-delta/#{event}/#{event}/minutes/60"
+          JSON[last_response.body]["item"].inject(0, &:+).should == 0
+        end
+      end
+
+      context "one event is double the other" do
+        before do
+          [[event, 2], [another_event, 1]].each do |event, c|
+            10.times.each do |i|
+              event_happened(
+                :event => event, :times => c, :at => Time.now - (i * MINUTE))
+            end
+          end
+        end
+
+        it 'sums to the total difference' do
+          get "/histogram-delta/#{event}/#{another_event}/minutes/60"
+          JSON[last_response.body]["item"].inject(0, &:+).should == 9
+        end
+      end
+    end
+  end
 
   describe 'GET /histogram/:event/:granularity/:quantity' do
     it_should_behave_like 'pages needing readonly auth' do
