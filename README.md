@@ -69,8 +69,8 @@ of making HTTP requests. You can read event metrics back using the same tools.
 It is even possible to script access to Duckweed using the `curl` tool from the
 command-line.
 
-All requests require authentication via an access token in the URL, or HTTP
-Basic Authentication.
+All requests require authentication via the `auth_token` query paramter in the
+URL, or HTTP Basic Authentication.
 
 ### `POST /track/:event`
 
