@@ -2,6 +2,7 @@ require 'duckweed'
 require 'duckweed/geckoboard_methods'
 require 'duckweed/notify_hoptoad'
 require 'duckweed/utility_methods'
+require 'duckweed/graphite_methods'
 require 'json'
 require 'sinatra'
 require 'hoptoad_notifier'
@@ -19,10 +20,15 @@ module Duckweed
   class App < Sinatra::Base
     include GeckoboardMethods
     include UtilityMethods
+    include GraphiteMethods
     extend NotifyHoptoad
 
     # routes accessible without authorization:
     AUTH_WHITELIST = ['/health']
+
+    configure do |app|
+      GraphiteMethods.setup(app)
+    end
 
     before do
       unless AUTH_WHITELIST.include?(request.path_info) || authorized?
@@ -210,17 +216,23 @@ module Duckweed
     end
 
     def increment_counters_for(event)
+      counters = {}
       INTERVAL.keys.each do |granularity|
         key = key_for(event, granularity)
         if has_bucket_for?(granularity)
-          if params[:quantity]
-            redis.incrby(key, params[:quantity].to_i)
-          else
-            redis.incr(key)
-          end
+          counters[granularity] =
+            if params[:quantity]
+              redis.incrby(key, params[:quantity].to_i)
+            else
+              redis.incr(key)
+            end
           redis.expire(key, INTERVAL[granularity][:expiry])
         end
       end
+
+      update_graphite(params[:event], counters)
+
+      counters
     end
 
     def key_for(event, granularity)
