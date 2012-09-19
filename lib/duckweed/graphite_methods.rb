@@ -43,7 +43,7 @@ module Duckweed
 
       settings.graphite_socket.puts "#{path} #{value} #{time}\n"
     rescue StandardError => ex
-      logger.error "graphite_send failed: #{ex}"
+      $stderr.puts "graphite_send failed: #{ex}"
     end
   end
 end
