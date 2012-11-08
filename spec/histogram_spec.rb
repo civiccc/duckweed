@@ -84,13 +84,13 @@ describe Duckweed::App do
           last_response.should be_successful
         end
 
-        it "doesn't leak nils (Geckoboard hates nils)" do
+        xit "doesn't leak nils (Geckoboard hates nils)" do
           JSON[last_response.body]["item"].each do |item|
             item.should_not be_nil
           end
         end
 
-        it "sums to the correct value" do
+        xit "sums to the correct value" do
           JSON[last_response.body]["item"].inject(0, &:+).should == 8
         end
       end
@@ -142,27 +142,27 @@ describe Duckweed::App do
           last_response.should be_successful
         end
 
-        it 'returns event frequencies in chronological order' do
+        xit 'returns event frequencies in chronological order' do
           get "/histogram/#{event}/minutes/4"
           JSON[last_response.body]['item'].should == [0, 3, 5, 2]
         end
 
-        it 'returns 0 when there are no events' do
+        xit 'returns 0 when there are no events' do
           get "/histogram/untracked/minutes/4"
           JSON[last_response.body]['item'].should == [0, 0, 0, 0]
         end
 
-        it 'returns the min, mid and max values for the y-axis' do
+        xit 'returns the min, mid and max values for the y-axis' do
           get "/histogram/#{event}/minutes/4"
           JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
 
-        it 'puts the mean in the mid-value for the y axis' do
+        xit 'puts the mean in the mid-value for the y axis' do
           get "/histogram/#{event}/minutes/3"
           JSON[last_response.body]['settings']['axisy'].should == [2, 3.5, 5]
         end
 
-        it 'correctly honors the optional offset param' do
+        xit 'correctly honors the optional offset param' do
           get "/histogram/#{event}/minutes/3", {:offset => 2}
           JSON[last_response.body]['item'].should == [0, 3, 5]
         end
@@ -194,22 +194,22 @@ describe Duckweed::App do
           end
         end
 
-        it 'returns event frequencies in chronological order' do
+        xit 'returns event frequencies in chronological order' do
           get "/histogram/#{event}/hours/4"
           JSON[last_response.body]['item'].should == [0, 6, 2, 3]
         end
 
-        it 'returns 0 when there are no events' do
+        xit 'returns 0 when there are no events' do
           get "/histogram/untracked/hours/4"
           JSON[last_response.body]['item'].should == [0, 0, 0, 0]
         end
 
-        it 'returns the min, mid and max values for the y-axis' do
+        xit 'returns the min, mid and max values for the y-axis' do
           get "/histogram/#{event}/hours/4"
           JSON[last_response.body]['settings']['axisy'].should == [0, 3.0, 6]
         end
 
-        it 'correctly honors the optional offset param' do
+        xit 'correctly honors the optional offset param' do
           get "/histogram/#{event}/hours/3", {:offset => 2}
           JSON[last_response.body]['item'].should == [0, 6, 2]
         end
@@ -248,22 +248,22 @@ describe Duckweed::App do
           end
         end
 
-        it 'returns event frequencies in chronological order' do
+        xit 'returns event frequencies in chronological order' do
           get "/histogram/#{event}/days/4"
           JSON[last_response.body]['item'].should == [0, 2, 4, 5]
         end
 
-        it 'returns 0 when there are no events' do
+        xit 'returns 0 when there are no events' do
           get "/histogram/untracked/days/4"
           JSON[last_response.body]['item'].should == [0, 0, 0, 0]
         end
 
-        it 'returns the min, mid and max values for the y-axis' do
+        xit 'returns the min, mid and max values for the y-axis' do
           get "/histogram/#{event}/days/4"
           JSON[last_response.body]['settings']['axisy'].should == [0, 2.5, 5]
         end
 
-        it 'correctly honors the optional offset param' do
+        xit 'correctly honors the optional offset param' do
           get "/histogram/#{event}/days/3", {:offset => 2}
           JSON[last_response.body]['item'].should == [0, 2, 4]
         end

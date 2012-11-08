@@ -3,6 +3,7 @@ require 'duckweed/geckoboard_methods'
 require 'duckweed/notify_hoptoad'
 require 'duckweed/utility_methods'
 require 'duckweed/graphite_methods'
+require 'duckweed/graphite_http_methods'
 require 'json'
 require 'sinatra'
 require 'hoptoad_notifier'
@@ -21,6 +22,7 @@ module Duckweed
     include GeckoboardMethods
     include UtilityMethods
     include GraphiteMethods
+    include GraphiteHTTPMethods
     extend NotifyHoptoad
 
     # routes accessible without authorization:
@@ -28,6 +30,7 @@ module Duckweed
 
     configure do |app|
       GraphiteMethods.setup(app)
+      GraphiteHTTPMethods.setup(app)
     end
 
     before do
@@ -68,13 +71,24 @@ module Duckweed
       'OK'
     end
 
-    get '/histogram/:event' do
+    # TODO: Remove these two routes and the `histogram` method once we're
+    # fully transitioned to a graphite backend
+    get '/legacy_histogram/:event' do
       histogram(params[:event], :minutes, 60)
+    end
+
+    get '/legacy_histogram/:event/:granularity/:quantity' do
+      check_request_limits!
+      histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
+    end
+
+    get '/histogram/:event' do
+      graphite_histogram(params[:event], :minutes, 60)
     end
 
     get '/histogram/:event/:granularity/:quantity' do
       check_request_limits!
-      histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
+      graphite_histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
     get '/histogram-delta/:event_a/:event_b' do
@@ -318,6 +332,18 @@ module Duckweed
 
     def histogram(event, granularity, quantity)
       values, times = values_and_times_for(granularity, event, quantity)
+      geckoboard_jsonify_for_chart(values, times)
+    end
+
+    def graphite_histogram(event, granularity, quantity)
+      params = {
+        :from  => "-#{quantity}#{granularity}",
+        :until => 'now'
+      }
+
+      values = graphite_summarize(event, granularity, params)
+      times  = times_for(granularity, quantity)
+
       geckoboard_jsonify_for_chart(values, times)
     end
 
