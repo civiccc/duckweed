@@ -24,12 +24,12 @@ module GraphiteHTTPMethods
     if response.is_a?(Array) && response[0] && response[0]['datapoints']
       response[0]['datapoints'].map(&:first).compact
     else
-      []
+      [0]
     end
   end
 
   def graphite_summarize(metric, period, params)
     graphite_get params.merge('target' =>
-                              "summarize(duckweed.#{metric}, \"1#{period}\")")
+                              "summarize(transformNull(duckweed.#{metric}, 0), \"1#{period}\")")
   end
 end
