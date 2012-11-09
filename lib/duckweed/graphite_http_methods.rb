@@ -18,6 +18,7 @@ module GraphiteHTTPMethods
   end
 
   def graphite_get(params)
+    params[:until] ||= '-1minute'
     url_params = params.merge('format' => 'json').map { |k, v| "#{k}=#{v}" }.join('&')
     get = Net::HTTP::Get.new("/render?#{url_params}")
     response = JSON.load(GraphiteHTTPMethods.http.request(get).body)
@@ -30,6 +31,16 @@ module GraphiteHTTPMethods
 
   def graphite_summarize(metric, period, params)
     graphite_get params.merge('target' =>
-                              "summarize(transformNull(duckweed.#{metric}, 0), \"1#{period}\")")
+                              "summarize(transformNull(duckweed.#{metric}, 0), \"1#{period}\", \"sum\", true)")
+  end
+
+  def graphite_summarize_diff(metric, metric2, period, params)
+    graphite_get params.merge('target' =>
+                              "summarize(diffSeries(transformNull(duckweed.#{metric}, 0), transformNull(duckweed.#{metric2}, 0)), \"1#{period}\", \"sum\", true)")
+  end
+
+  def graphite_integral(metric, params)
+    graphite_get(params.merge('target' =>
+                              "integral(duckweed.#{metric})")).last.to_s
   end
 end

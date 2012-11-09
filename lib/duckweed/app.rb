@@ -39,26 +39,53 @@ module Duckweed
       end
     end
 
-    get '/check/:event' do
+    # TODO: remove legacy route
+    get '/legacy_check/:event' do
       require_threshold!
       check_threshold(params[:event], :minutes, 60)
     end
 
-    get '/check/:event/:granularity/:quantity' do
+    # TODO: remove legacy route
+    get '/legacy_check/:event/:granularity/:quantity' do
       require_threshold!
       check_request_limits!
       check_threshold(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
-    get '/count/:event' do
+    get '/check/:event' do
+      require_threshold!
+      graphite_check_threshold(params[:event], graphite_params(params))
+    end
+
+    get '/check/:event/:granularity/:quantity' do
+      require_threshold!
+      check_request_limits!
+      graphite_check_threshold(params[:event], graphite_params(params))
+    end
+
+    # TODO: remove legacy route
+    get '/legacy_count/:event' do
       # default to last hour with minute-granularity
       count = count_for(params[:event], :minutes, 60).to_s
       format_count(count, params)
     end
 
-    get '/count/:event/:granularity/:quantity' do
+    # TODO: remove legacy route
+    get '/legacy_count/:event/:granularity/:quantity' do
       check_request_limits!
       count = count_for(params[:event], params[:granularity].to_sym, params[:quantity].to_i).to_s
+      format_count(count, params)
+    end
+
+    get '/count/:event' do
+      # default to last hour with minute-granularity
+      count = graphite_integral(params[:event], graphite_params(params))
+      format_count(count, params)
+    end
+
+    get '/count/:event/:granularity/:quantity' do
+      check_request_limits!
+      count = graphite_integral(params[:event], graphite_params(params))
       format_count(count, params)
     end
 
@@ -71,12 +98,12 @@ module Duckweed
       'OK'
     end
 
-    # TODO: Remove these two routes and the `histogram` method once we're
-    # fully transitioned to a graphite backend
+    # TODO: remove legacy route
     get '/legacy_histogram/:event' do
       histogram(params[:event], :minutes, 60)
     end
 
+    # TODO: remove legacy route
     get '/legacy_histogram/:event/:granularity/:quantity' do
       check_request_limits!
       histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
@@ -91,29 +118,45 @@ module Duckweed
       graphite_histogram(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
-    get '/histogram-delta/:event_a/:event_b' do
+    # TODO: remove legacy route
+    get '/legacy_histogram-delta/:event_a/:event_b' do
       histogram_delta(params[:event_a], params[:event_b], :minutes, 60)
     end
 
-    get '/histogram-delta/:event_a/:event_b/:granularity/:quantity' do
+    # TODO: remove legacy route
+    get '/legacy_histogram-delta/:event_a/:event_b/:granularity/:quantity' do
       check_request_limits!
       histogram_delta(params[:event_a], params[:event_b],
                       params[:granularity].to_sym, params[:quantity].to_i)
     end
 
+    get '/histogram-delta/:event_a/:event_b' do
+      graphite_histogram_delta(params[:event_a], params[:event_b], :minutes, 60)
+    end
+
+    get '/histogram-delta/:event_a/:event_b/:granularity/:quantity' do
+      check_request_limits!
+      graphite_histogram_delta(params[:event_a], params[:event_b],
+                      params[:granularity].to_sym, params[:quantity].to_i)
+    end
+
+    # TODO: implement for graphite (currently unused)
     get '/accumulate/:event' do
       accumulate(params[:event], :minutes, 60)
     end
 
+    # TODO: implement for graphite (currently unused)
     get '/accumulate/:event/:granularity/:quantity' do
       check_request_limits!
       accumulate(params[:event], params[:granularity].to_sym, params[:quantity].to_i)
     end
 
+    # TODO: implement for graphite (currently unused)
     get '/group/:group' do
       group_members(params[:group]).to_json
     end
 
+    # TODO: implement for graphite (currently unused)
     get '/group_count/:group' do
       count = group_members(params[:group]).map do |event|
         count_for(event, :minutes, 60)
@@ -121,6 +164,7 @@ module Duckweed
       format_count(count, params)
     end
 
+    # TODO: implement for graphite (currently unused)
     get '/group_count/:group/:granularity/:quantity' do
       count = group_members(params[:group]).map do |event|
         count_for(event, params[:granularity].to_sym, params[:quantity].to_i)
@@ -128,6 +172,7 @@ module Duckweed
       format_count(count, params)
     end
 
+    # TODO: implement for graphite (currently unused)
     # Only using post to get around request-length limitations w/get
     post '/multicount' do
       events = params[:events] || []
@@ -156,6 +201,14 @@ module Duckweed
 
     def redis
       Duckweed.redis
+    end
+
+    def graphite_params(params)
+      granularity = params[:granularity] ? params[:granularity] : 'minutes'
+      quantity = params[:quantity] ? params[:quantity] : 60
+      {
+        :from  => "-#{quantity}#{granularity}",
+      }
     end
 
     def authorized?(permission='r')
@@ -325,6 +378,16 @@ module Duckweed
       end
     end
 
+    def graphite_check_threshold(event, graphite_params)
+      threshold = params[:threshold]
+      count = graphite_integral(event, graphite_params(params))
+      if count.to_i >= threshold.to_i
+        "GOOD: #{count}"
+      else
+        "BAD: #{count} < #{threshold}"
+      end
+    end
+
     def has_bucket_for?(granularity)
       first_available_bucket_time = Time.now.to_i - INTERVAL[granularity][:expiry]
       first_available_bucket_time < timestamp
@@ -336,14 +399,19 @@ module Duckweed
     end
 
     def graphite_histogram(event, granularity, quantity)
+      values = graphite_summarize(event, granularity,
+                                  graphite_params(params))
+      times  = times_for(granularity, quantity)
+      geckoboard_jsonify_for_chart(values, times)
+    end
+
+    def graphite_histogram_delta(event_a, event_b, granularity, quantity)
       params = {
         :from  => "-#{quantity}#{granularity}",
-        :until => 'now'
       }
-
-      values = graphite_summarize(event, granularity, params)
-      times  = times_for(granularity, quantity)
-
+      values = graphite_summarize_diff(event_a, event_b, granularity,
+                                       graphite_params(params))
+      times = times_for(granularity, quantity)
       geckoboard_jsonify_for_chart(values, times)
     end
 
