@@ -1,4 +1,4 @@
-require 'CGI'
+require 'cgi'
 require 'net/http'
 require 'uri'
 require 'json'
