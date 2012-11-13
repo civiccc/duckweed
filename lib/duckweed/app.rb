@@ -406,9 +406,6 @@ module Duckweed
     end
 
     def graphite_histogram_delta(event_a, event_b, granularity, quantity)
-      params = {
-        :from  => "-#{quantity}#{granularity}",
-      }
       values = graphite_summarize_diff(event_a, event_b, granularity,
                                        graphite_params(params))
       times = times_for(granularity, quantity)

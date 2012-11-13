@@ -1,3 +1,4 @@
+require 'CGI'
 require 'net/http'
 require 'uri'
 require 'json'
@@ -19,7 +20,7 @@ module GraphiteHTTPMethods
 
   def graphite_get(params)
     params[:until] ||= '-1minute'
-    url_params = params.merge('format' => 'json').map { |k, v| "#{k}=#{v}" }.join('&')
+    url_params = params.merge('format' => 'json').map { |k, v| "#{k}=#{CGI::escape v}" }.join('&')
     get = Net::HTTP::Get.new("/render?#{url_params}")
     response = JSON.load(GraphiteHTTPMethods.http.request(get).body)
     if response.is_a?(Array) && response[0] && response[0]['datapoints']
